@@ -37,6 +37,23 @@ const GRUPAMENTOS_OPCOES = [
   'GERAL',
 ];
 
+// Mantém apenas dígitos e aplica o separador de milhar: 10000 -> 10.000
+const formatarKm = (valor: string): string => {
+  const digitos = valor.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+  if (!digitos) return '';
+  return digitos.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+};
+
+// Placa padrão Mercosul: 3 letras + 1 número + 1 letra + 2 números (ex: ABC1D23)
+const PLACA_MERCOSUL_REGEX = /^[A-Z]{3}[0-9][A-Z][0-9]{2}$/;
+
+const limparPlaca = (valor: string): string =>
+  valor
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 7);
+
+
 export const DevViaturas: React.FC<DevViaturasProps> = ({
   viaturas,
   onSalvarViatura,
@@ -76,13 +93,17 @@ export const DevViaturas: React.FC<DevViaturasProps> = ({
     setViaturaEmEdicao(vtr);
     setPrefixo(vtr.prefixo);
     setModelo(vtr.modelo);
-    setPlaca(vtr.placa);
+    setPlaca(limparPlaca(vtr.placa));
     setGrupamento(vtr.grupamento);
     setStatus(vtr.status);
-    setKmAtual(vtr.kmAtual || '');
+    setKmAtual(formatarKm(vtr.kmAtual || ''));
     setObservacoes(vtr.observacoes || '');
     setModalAberto(true);
   };
+
+  const placaValida = PLACA_MERCOSUL_REGEX.test(placa);
+  const formularioValido =
+    prefixo.trim() !== '' && modelo.trim() !== '' && placaValida;
 
   const handleSalvar = (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,6 +112,13 @@ export const DevViaturas: React.FC<DevViaturasProps> = ({
       setTimeout(() => setFeedback(null), 3500);
       return;
     }
+    if (!placaValida) {
+      setFeedback('A placa deve seguir o padrão Mercosul (ex: ABC1D23).');
+      setTimeout(() => setFeedback(null), 3500);
+      return;
+    }
+
+    const kmFormatado = formatarKm(kmAtual);
 
     const novaOuAtualizada: Viatura = {
       id: viaturaEmEdicao?.id || `vtr-${Date.now()}`,
@@ -99,10 +127,11 @@ export const DevViaturas: React.FC<DevViaturasProps> = ({
       placa: placa.trim().toUpperCase(),
       grupamento,
       status,
-      kmAtual: kmAtual.trim() || undefined,
+      kmAtual: kmFormatado || undefined,
       observacoes: observacoes.trim() || undefined,
       dataCadastro: viaturaEmEdicao?.dataCadastro || new Date().toLocaleDateString('pt-BR'),
     };
+
 
     onSalvarViatura(novaOuAtualizada);
     setModalAberto(false);
@@ -301,7 +330,7 @@ export const DevViaturas: React.FC<DevViaturasProps> = ({
                 <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs text-slate-600">
                   <div className="flex items-center gap-1.5">
                     <Gauge className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span>KM: {vtr.kmAtual || 'Não informado'}</span>
+                    <span>KM: {formatarKm(vtr.kmAtual || '') || 'Não informado'}</span>
                   </div>
                   <div className="flex items-center gap-1.5 truncate">
                     <Shield className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -399,17 +428,30 @@ export const DevViaturas: React.FC<DevViaturasProps> = ({
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                    Placa *
+                    Placa (Mercosul) *
+                    {placa.length > 0 && !placaValida && (
+                      <span className="text-rose-600 ml-1">*</span>
+                    )}
                   </label>
                   <input
                     type="text"
                     value={placa}
-                    onChange={(e) => setPlaca(e.target.value)}
-                    placeholder="Ex: RIO-1A23"
-                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 border border-slate-300 focus:bg-white focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none text-slate-900 font-bold uppercase"
+                    onChange={(e) => setPlaca(limparPlaca(e.target.value))}
+                    placeholder="Ex: ABC1D23"
+                    className={`w-full px-3 py-2 text-xs rounded-xl bg-slate-50 border focus:bg-white focus:ring-1 outline-none text-slate-900 font-bold uppercase ${
+                      placa.length > 0 && !placaValida
+                        ? 'border-rose-500 focus:border-rose-600 focus:ring-rose-600'
+                        : 'border-slate-300 focus:border-blue-600 focus:ring-blue-600'
+                    }`}
                     required
                   />
+                  {placa.length > 0 && !placaValida && (
+                    <p className="mt-1 text-[11px] font-bold text-rose-600">
+                      * Placa fora do padrão Mercosul (3 letras, 1 número, 1 letra, 2 números).
+                    </p>
+                  )}
                 </div>
+
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -453,11 +495,13 @@ export const DevViaturas: React.FC<DevViaturasProps> = ({
                 </label>
                 <input
                   type="text"
+                  inputMode="numeric"
                   value={kmAtual}
-                  onChange={(e) => setKmAtual(e.target.value)}
-                  placeholder="Ex: 42.500 km"
+                  onChange={(e) => setKmAtual(formatarKm(e.target.value))}
+                  placeholder="Ex: 42.500"
                   className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 border border-slate-300 focus:bg-white focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none text-slate-900 font-medium"
                 />
+
               </div>
 
               <div>
@@ -483,11 +527,13 @@ export const DevViaturas: React.FC<DevViaturasProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 active:bg-blue-900 text-white font-bold text-xs uppercase cursor-pointer transition-colors flex items-center gap-1.5 shadow-xs"
+                  disabled={!formularioValido}
+                  className="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 active:bg-blue-900 text-white font-bold text-xs uppercase cursor-pointer transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-700"
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>Salvar Viatura</span>
                 </button>
+
               </div>
             </form>
           </div>

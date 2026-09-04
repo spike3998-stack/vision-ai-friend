@@ -205,6 +205,19 @@ export default function App() {
     setCurrentScreen('menu');
   };
 
+  const matriculaDuplicada =
+    cadMatricula.trim() !== '' &&
+    usuarios.some((u) => u.matricula.trim() === cadMatricula.trim());
+
+  const cadastroValido =
+    cadNomeCompleto.trim() !== '' &&
+    cadNomeDeGuerra.trim() !== '' &&
+    cadMatricula.trim() !== '' &&
+    !matriculaDuplicada &&
+    cadTipoSanguineo.trim() !== '' &&
+    Boolean(cadGrupamento) &&
+    cadSenha.trim() !== '';
+
   const handleCadastro = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
@@ -221,6 +234,11 @@ export default function App() {
       setAuthError('Por favor, preencha a MATRÍCULA.');
       return;
     }
+    if (matriculaDuplicada) {
+      setAuthError('Esta MATRÍCULA já está cadastrada por outro agente. Cada matrícula é exclusiva.');
+      return;
+    }
+
     if (!cadTipoSanguineo.trim()) {
       setAuthError('Por favor, preencha o TIPO SANGUÍNEO (ex: O+, A+, B+, AB-).');
       return;
@@ -875,6 +893,7 @@ export default function App() {
                     className="block text-xs font-black uppercase text-slate-800 mb-1 tracking-wider"
                   >
                     MATRÍCULA:
+                    {matriculaDuplicada && <span className="text-rose-600 ml-1">*</span>}
                   </label>
                   <input
                     id="input-cad-matricula"
@@ -882,10 +901,20 @@ export default function App() {
                     value={cadMatricula}
                     onChange={(e) => setCadMatricula(e.target.value)}
                     placeholder=""
-                    className="w-full px-3.5 py-3 border border-slate-300 rounded-xl text-sm sm:text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                    className={`w-full px-3.5 py-3 border rounded-xl text-sm sm:text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 ${
+                      matriculaDuplicada
+                        ? 'border-rose-500 focus:ring-rose-600 focus:border-rose-600'
+                        : 'border-slate-300 focus:ring-blue-600 focus:border-blue-600'
+                    }`}
                     required
                   />
+                  {matriculaDuplicada && (
+                    <p className="mt-1 text-[11px] font-bold text-rose-600">
+                      * Esta matrícula já está cadastrada por outro agente. Cada matrícula é exclusiva.
+                    </p>
+                  )}
                 </div>
+
 
                 {/* 4. TIPO SANGUÍNEO (manual) */}
                 <div>
@@ -987,7 +1016,9 @@ export default function App() {
                   <button
                     id="btn-confirmar-cadastro"
                     type="submit"
-                    className="w-full py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-black text-base uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    disabled={!cadastroValido}
+                    className="w-full py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-black text-base uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
+
                   >
                     <CheckCircle2 className="w-5 h-5" />
                     <span>FINALIZAR CADASTRO</span>
