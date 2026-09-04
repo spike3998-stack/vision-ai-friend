@@ -14,7 +14,81 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      gm_checklists: {
+        Row: {
+          criado_em: string
+          dados: Json
+          id: string
+        }
+        Insert: {
+          criado_em?: string
+          dados: Json
+          id: string
+        }
+        Update: {
+          criado_em?: string
+          dados?: Json
+          id?: string
+        }
+        Relationships: []
+      }
+      gm_postos: {
+        Row: {
+          atualizado_em: string
+          ocupantes: Json
+          posto: string
+        }
+        Insert: {
+          atualizado_em?: string
+          ocupantes?: Json
+          posto: string
+        }
+        Update: {
+          atualizado_em?: string
+          ocupantes?: Json
+          posto?: string
+        }
+        Relationships: []
+      }
+      gm_usuarios: {
+        Row: {
+          criado_em: string
+          dados: Json
+          id: string
+          matricula: string
+        }
+        Insert: {
+          criado_em?: string
+          dados: Json
+          id: string
+          matricula: string
+        }
+        Update: {
+          criado_em?: string
+          dados?: Json
+          id?: string
+          matricula?: string
+        }
+        Relationships: []
+      }
+      gm_viaturas: {
+        Row: {
+          criado_em: string
+          dados: Json
+          id: string
+        }
+        Insert: {
+          criado_em?: string
+          dados: Json
+          id: string
+        }
+        Update: {
+          criado_em?: string
+          dados?: Json
+          id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
