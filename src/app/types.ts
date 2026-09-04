@@ -6,6 +6,7 @@ export type Screen =
   | 'opcao-funcao'
   | 'motorista-mapa'
   | 'ciosp'
+  | 'equipe-ordens'
   | 'ras'
   | 'abono'
   | 'livro-ata'
@@ -15,6 +16,13 @@ export type Screen =
   | 'dev-viaturas';
 
 export type StatusOrdemServico = 'aguardando' | 'aceita' | 'recusada' | 'espera';
+
+export interface MembroEquipe {
+  nomeDeGuerra: string;
+  matricula: string;
+  posto: string;
+  grupamento?: string | undefined;
+}
 
 export interface OrdemServico {
   id: string;
@@ -30,7 +38,20 @@ export interface OrdemServico {
   respondidoPorMatricula?: string | undefined;
   esperaMinutos?: number | undefined;
   esperaAte?: number | undefined;
+  // Boletim de ocorrência no local
+  equipe?: MembroEquipe[] | undefined;
+  viaturaPrefixo?: string | undefined;
+  ocorrenciaStatus?: 'iniciada' | 'recusada_no_local' | 'finalizada' | undefined;
+  ocorrenciaIniciadaEm?: string | undefined;
+  relato?: string | undefined;
+  fotos?: string[] | undefined;
+  reboqueAcionado?: boolean | undefined;
+  reboqueEm?: string | undefined;
+  apoioGrupamento?: string | undefined;
+  origemOrdemId?: string | undefined;
+  ehApoio?: boolean | undefined;
 }
+
 
 
 export type FuncaoPosto =
