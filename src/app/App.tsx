@@ -1016,7 +1016,9 @@ export default function App() {
                   <button
                     id="btn-confirmar-cadastro"
                     type="submit"
-                    className="w-full py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-black text-base uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    disabled={!cadastroValido}
+                    className="w-full py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-black text-base uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
+
                   >
                     <CheckCircle2 className="w-5 h-5" />
                     <span>FINALIZAR CADASTRO</span>
