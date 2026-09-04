@@ -5,6 +5,7 @@ export type Screen =
   | 'posto-servico'
   | 'opcao-funcao'
   | 'motorista-mapa'
+  | 'ciosp'
   | 'ras'
   | 'abono'
   | 'livro-ata'
@@ -12,6 +13,25 @@ export type Screen =
   | 'dev-autorizar'
   | 'dev-consultar'
   | 'dev-viaturas';
+
+export type StatusOrdemServico = 'aguardando' | 'aceita' | 'recusada' | 'espera';
+
+export interface OrdemServico {
+  id: string;
+  grupamento: string;
+  endereco: string;
+  descricao: string;
+  observacoes?: string | undefined;
+  status: StatusOrdemServico;
+  criadoPor: string;
+  criadoPorMatricula: string;
+  dataHora: string;
+  respondidoPor?: string | undefined;
+  respondidoPorMatricula?: string | undefined;
+  esperaMinutos?: number | undefined;
+  esperaAte?: number | undefined;
+}
+
 
 export type FuncaoPosto =
   | 'CIOSP'
