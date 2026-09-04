@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
@@ -31,17 +31,18 @@ import {
   ThumbsUp,
   Ban,
 } from 'lucide-react';
-import { UsuarioCadastrado, OcupantePosto, Viatura, OrdemServico } from '../types';
+import { UsuarioCadastrado, OcupantePosto, Viatura, OrdemServico, MembroEquipe } from '../types';
 import { GRUPAMENTOS } from '../data/grupamentos';
 import { getViaturasArmazenadas } from '../services/storage';
 import { ModalChecklistViatura } from './ModalChecklistViatura';
-import { fetchOrdensServidor, atualizarOrdemServidor } from '../services/api';
+import { OrdensRecebidas } from './OrdensRecebidas';
 
 interface MotoristaLocalizacaoProps {
   usuarioAtivo: UsuarioCadastrado | null;
   postoSelecionado?: string;
   ocupantesPosto: OcupantePosto[];
   viaturas?: Viatura[];
+  equipe: MembroEquipe[];
   onTrocarPosto: () => void;
   onDesocuparPosto: () => void;
   onVoltarMenu: () => void;
@@ -58,6 +59,7 @@ export const MotoristaLocalizacao: React.FC<MotoristaLocalizacaoProps> = ({
   postoSelecionado = 'MOTORISTA',
   ocupantesPosto,
   viaturas,
+  equipe,
   onTrocarPosto,
   onDesocuparPosto,
   onVoltarMenu,
@@ -314,7 +316,7 @@ export const MotoristaLocalizacao: React.FC<MotoristaLocalizacaoProps> = ({
   };
 
   // ============ ORDENS DE SERVIÇO ENVIADAS PELO CIOSP ============
-  const [rotaInfo, setRotaInfo] = useState<{ ordemId: string; endereco: string } | null>(null);
+  const [, setRotaInfo] = useState<{ ordemId: string; endereco: string } | null>(null);
   const [rotaErro, setRotaErro] = useState<string | null>(null);
   const rotaLayerRef = useRef<L.Polyline | null>(null);
   const destinoMarkerRef = useRef<L.Marker | null>(null);
@@ -382,13 +384,6 @@ export const MotoristaLocalizacao: React.FC<MotoristaLocalizacaoProps> = ({
     setRotaInfo(null);
     setAutoCenter(true);
   };
-
-  const ordensVisiveis = ordens.filter((o) => {
-    if (o.status === 'aguardando') return true;
-    if (o.status === 'espera') return true;
-    if (o.status === 'aceita') return rotaInfo?.ordemId === o.id;
-    return false;
-  });
 
   // Brasão do grupamento do usuário
   const grupamentoUsuario = GRUPAMENTOS.find((g) => g.sigla === usuarioAtivo?.grupamento) || GRUPAMENTOS[0];
@@ -524,7 +519,7 @@ export const MotoristaLocalizacao: React.FC<MotoristaLocalizacaoProps> = ({
         posto="MOTORISTA"
         equipe={equipe}
         viaturaPrefixo={viaturaSelecionada?.prefixo}
-        onAceitar={(ordem) => traçarRota(ordem)}
+        onAceitar={(ordem: OrdemServico) => traçarRota(ordem)}
         onEncerrarRota={limparRota}
       />
 
