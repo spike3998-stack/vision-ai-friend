@@ -205,6 +205,19 @@ export default function App() {
     setCurrentScreen('menu');
   };
 
+  const matriculaDuplicada =
+    cadMatricula.trim() !== '' &&
+    usuarios.some((u) => u.matricula.trim() === cadMatricula.trim());
+
+  const cadastroValido =
+    cadNomeCompleto.trim() !== '' &&
+    cadNomeDeGuerra.trim() !== '' &&
+    cadMatricula.trim() !== '' &&
+    !matriculaDuplicada &&
+    cadTipoSanguineo.trim() !== '' &&
+    cadGrupamento !== '' &&
+    cadSenha.trim() !== '';
+
   const handleCadastro = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
@@ -221,6 +234,11 @@ export default function App() {
       setAuthError('Por favor, preencha a MATRÍCULA.');
       return;
     }
+    if (matriculaDuplicada) {
+      setAuthError('Esta MATRÍCULA já está cadastrada por outro agente. Cada matrícula é exclusiva.');
+      return;
+    }
+
     if (!cadTipoSanguineo.trim()) {
       setAuthError('Por favor, preencha o TIPO SANGUÍNEO (ex: O+, A+, B+, AB-).');
       return;
