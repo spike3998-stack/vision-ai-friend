@@ -37,6 +37,23 @@ const GRUPAMENTOS_OPCOES = [
   'GERAL',
 ];
 
+// Mantém apenas dígitos e aplica o separador de milhar: 10000 -> 10.000
+const formatarKm = (valor: string): string => {
+  const digitos = valor.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+  if (!digitos) return '';
+  return digitos.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+};
+
+// Placa padrão Mercosul: 3 letras + 1 número + 1 letra + 2 números (ex: ABC1D23)
+const PLACA_MERCOSUL_REGEX = /^[A-Z]{3}[0-9][A-Z][0-9]{2}$/;
+
+const limparPlaca = (valor: string): string =>
+  valor
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 7);
+
+
 export const DevViaturas: React.FC<DevViaturasProps> = ({
   viaturas,
   onSalvarViatura,
