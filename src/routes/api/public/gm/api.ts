@@ -312,14 +312,22 @@ export const Route = createFileRoute("/api/public/gm/api")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        let body: any;
         try {
-          const body = await request.json();
+          const texto = await request.text();
+          body = texto ? JSON.parse(texto) : {};
+        } catch {
+          return json({ error: "Corpo da requisição inválido (JSON esperado)." }, 400);
+        }
+        try {
           return await handle(body);
         } catch (err) {
-          console.error("[GM API]", err);
-          return json({ error: "Erro interno no servidor." }, 500);
+          const mensagem = err instanceof Error ? err.message : String(err);
+          console.error("[GM API]", body?.acao, mensagem, err);
+          return json({ error: `Erro interno no servidor: ${mensagem}` }, 500);
         }
       },
     },
   },
 });
+
