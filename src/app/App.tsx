@@ -26,6 +26,8 @@ import { ModalCortarFoto } from './components/ModalCortarFoto';
 import { MotoristaLocalizacao } from './components/MotoristaLocalizacao';
 import { CiospPainel } from './components/CiospPainel';
 import { EquipePainel } from './components/EquipePainel';
+import { LivroAta } from './components/LivroAta';
+
 
 export default function App() {
   // Navigation
