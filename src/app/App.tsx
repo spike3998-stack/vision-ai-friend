@@ -24,6 +24,7 @@ import { DevConsultar } from './components/DevConsultar';
 import { DevViaturas } from './components/DevViaturas';
 import { ModalCortarFoto } from './components/ModalCortarFoto';
 import { MotoristaLocalizacao } from './components/MotoristaLocalizacao';
+import { CiospPainel } from './components/CiospPainel';
 
 export default function App() {
   // Navigation
@@ -366,6 +367,8 @@ export default function App() {
     // Se o usuário escolher o posto de serviço "MOTORISTA", abre a interface com mapa e rastreamento em tempo real
     if (funcao === 'MOTORISTA') {
       setCurrentScreen('motorista-mapa');
+    } else if (funcao === 'CIOSP') {
+      setCurrentScreen('ciosp');
     } else {
       setCurrentScreen('opcao-funcao');
     }
@@ -584,7 +587,7 @@ export default function App() {
 
       {/* Main Content Area */}
       <main id="main-area" className="flex-1 flex items-center justify-center p-4 sm:p-6">
-        <div className={`w-full ${currentScreen === 'motorista-mapa' ? 'max-w-4xl' : 'max-w-lg'} transition-all duration-200`}>
+        <div className={`w-full ${currentScreen === 'motorista-mapa' || currentScreen === 'ciosp' ? 'max-w-4xl' : 'max-w-lg'} transition-all duration-200`}>
 
           {/* ========================================= */}
           {/* TELA 1: LOGIN                             */}
@@ -1498,6 +1501,18 @@ export default function App() {
               postoSelecionado={funcaoSelecionada || 'MOTORISTA'}
               ocupantesPosto={ocupacaoPostos['MOTORISTA'] || []}
               viaturas={viaturas}
+              onTrocarPosto={() => setCurrentScreen('posto-servico')}
+              onDesocuparPosto={handleDesocuparPosto}
+              onVoltarMenu={() => setCurrentScreen('menu')}
+            />
+          )}
+
+          {/* ========================================= */}
+          {/* TELA: CIOSP - ORDENS DE SERVIÇO           */}
+          {/* ========================================= */}
+          {currentScreen === 'ciosp' && (
+            <CiospPainel
+              usuarioAtivo={usuarioAtivo}
               onTrocarPosto={() => setCurrentScreen('posto-servico')}
               onDesocuparPosto={handleDesocuparPosto}
               onVoltarMenu={() => setCurrentScreen('menu')}
