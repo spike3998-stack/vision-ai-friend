@@ -428,17 +428,30 @@ export const DevViaturas: React.FC<DevViaturasProps> = ({
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                    Placa *
+                    Placa (Mercosul) *
+                    {placa.length > 0 && !placaValida && (
+                      <span className="text-rose-600 ml-1">*</span>
+                    )}
                   </label>
                   <input
                     type="text"
                     value={placa}
-                    onChange={(e) => setPlaca(e.target.value)}
-                    placeholder="Ex: RIO-1A23"
-                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 border border-slate-300 focus:bg-white focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none text-slate-900 font-bold uppercase"
+                    onChange={(e) => setPlaca(limparPlaca(e.target.value))}
+                    placeholder="Ex: ABC1D23"
+                    className={`w-full px-3 py-2 text-xs rounded-xl bg-slate-50 border focus:bg-white focus:ring-1 outline-none text-slate-900 font-bold uppercase ${
+                      placa.length > 0 && !placaValida
+                        ? 'border-rose-500 focus:border-rose-600 focus:ring-rose-600'
+                        : 'border-slate-300 focus:border-blue-600 focus:ring-blue-600'
+                    }`}
                     required
                   />
+                  {placa.length > 0 && !placaValida && (
+                    <p className="mt-1 text-[11px] font-bold text-rose-600">
+                      * Placa fora do padrão Mercosul (3 letras, 1 número, 1 letra, 2 números).
+                    </p>
+                  )}
                 </div>
+
               </div>
 
               <div className="grid grid-cols-2 gap-3">
