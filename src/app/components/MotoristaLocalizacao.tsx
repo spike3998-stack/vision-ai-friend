@@ -339,10 +339,11 @@ export const MotoristaLocalizacao: React.FC<MotoristaLocalizacaoProps> = ({
                 POSTO OPERACIONAL
               </span>
               <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-white mt-1">
-                VIATURA • {usuarioAtivo?.nomeDeGuerra || 'CONDUTOR'}
+                {usuarioAtivo?.nomeDeGuerra || 'CONDUTOR'}
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                Condutor: {postoSelecionado || 'MOTORISTA'} (Matrícula: {usuarioAtivo?.matricula})
+                Matrícula: {usuarioAtivo?.matricula}
+
                 {viaturaSelecionada && (
                   <span className="ml-1.5 text-blue-400 font-bold">
                     • VTR: {viaturaSelecionada.prefixo} ({viaturaSelecionada.placa})
