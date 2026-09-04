@@ -10,6 +10,9 @@ import {
   Clock,
   XCircle,
   Repeat,
+  Truck,
+  Siren,
+  FileText,
 } from 'lucide-react';
 import { UsuarioCadastrado, OrdemServico } from '../types';
 import { GRUPAMENTOS } from '../data/grupamentos';
@@ -239,6 +242,40 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
               {ordem.observacoes && (
                 <p className="text-xs text-slate-500">Obs.: {ordem.observacoes}</p>
               )}
+              {ordem.reboqueAcionado && (
+                <p className="text-xs font-black uppercase text-amber-900 bg-amber-100 border-2 border-amber-400 rounded-lg p-2.5 flex items-center gap-2 animate-pulse">
+                  <Truck className="w-4 h-4 shrink-0" />
+                  <span>
+                    Reboque acionado pela equipe{ordem.reboqueEm ? ` às ${ordem.reboqueEm}` : ''}
+                  </span>
+                </p>
+              )}
+
+              {ordem.apoioGrupamento && (
+                <p className="text-xs font-black uppercase text-rose-900 bg-rose-100 border border-rose-300 rounded-lg p-2.5 flex items-center gap-2">
+                  <Siren className="w-4 h-4 shrink-0" />
+                  <span>Apoio acionado: {ordem.apoioGrupamento}</span>
+                </p>
+              )}
+
+              {ordem.ocorrenciaStatus === 'iniciada' && (
+                <div className="text-xs text-slate-700 bg-white border border-slate-200 rounded-lg p-2.5 space-y-1">
+                  <p className="font-black uppercase text-slate-800 flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-blue-600" />
+                    Ocorrência iniciada no local {ordem.ocorrenciaIniciadaEm ? `• ${ordem.ocorrenciaIniciadaEm}` : ''}
+                  </p>
+                  {ordem.equipe && ordem.equipe.length > 0 && (
+                    <p className="text-[11px] text-slate-600">
+                      Equipe: {ordem.equipe.map((m) => `${m.nomeDeGuerra} (${m.posto})`).join(' • ')}
+                      {ordem.viaturaPrefixo ? ` • VTR ${ordem.viaturaPrefixo}` : ''}
+                    </p>
+                  )}
+                  {ordem.relato && (
+                    <p className="text-[11px] text-slate-600 italic whitespace-pre-wrap">{ordem.relato}</p>
+                  )}
+                </div>
+              )}
+
               {ordem.respondidoPor && (
                 <p className="text-[11px] text-slate-500 font-medium flex items-center gap-1.5">
                   {ordem.status === 'aceita' && (
@@ -247,7 +284,7 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
                   {ordem.status === 'recusada' && <XCircle className="w-3.5 h-3.5 text-rose-600" />}
                   {ordem.status === 'espera' && <Clock className="w-3.5 h-3.5 text-blue-600" />}
                   <span>
-                    Resposta do motorista: {ordem.respondidoPor} (
+                    Resposta da equipe: {ordem.respondidoPor} (
                     {ordem.respondidoPorMatricula})
                   </span>
                 </p>
