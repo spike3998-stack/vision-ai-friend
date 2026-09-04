@@ -307,9 +307,142 @@ export const MotoristaLocalizacao: React.FC<MotoristaLocalizacaoProps> = ({
     setAutoCenter(true);
   };
 
+  // ============ ORDENS DE SERVIÇO ENVIADAS PELO CIOSP ============
+  const [ordens, setOrdens] = useState<OrdemServico[]>([]);
+  const [escolhendoEspera, setEscolhendoEspera] = useState<string | null>(null);
+  const [rotaInfo, setRotaInfo] = useState<{ ordemId: string; endereco: string } | null>(null);
+  const [rotaErro, setRotaErro] = useState<string | null>(null);
+  const rotaLayerRef = useRef<L.Polyline | null>(null);
+  const destinoMarkerRef = useRef<L.Marker | null>(null);
+
+  const carregarOrdens = useCallback(async () => {
+    const lista = await fetchOrdensServidor();
+    const grupo = usuarioAtivo?.grupamento;
+    const agoraMs = Date.now();
+    setOrdens(
+      lista.filter((o) => {
+        if (grupo && o.grupamento !== grupo) return false;
+        if (o.status === 'recusada') return false;
+        if (o.status === 'espera' && o.esperaAte && o.esperaAte < agoraMs) return true;
+        return true;
+      })
+    );
+  }, [usuarioAtivo?.grupamento]);
+
+  useEffect(() => {
+    carregarOrdens();
+    const t = window.setInterval(carregarOrdens, 6000);
+    return () => window.clearInterval(t);
+  }, [carregarOrdens]);
+
+  // Faz o tempo de espera expirar automaticamente na tela do motorista
+  const [, forcarRelogio] = useState(0);
+  useEffect(() => {
+    const t = window.setInterval(() => forcarRelogio((n) => n + 1), 1000);
+    return () => window.clearInterval(t);
+  }, []);
+
+  const responderOrdem = async (
+    ordem: OrdemServico,
+    status: 'aceita' | 'recusada' | 'espera',
+    minutos?: number
+  ) => {
+    const dados: Partial<OrdemServico> = {
+      status,
+      respondidoPor: usuarioAtivo?.nomeDeGuerra || 'MOTORISTA',
+      respondidoPorMatricula: usuarioAtivo?.matricula || '---',
+    };
+    if (status === 'espera' && minutos) {
+      dados.esperaMinutos = minutos;
+      dados.esperaAte = Date.now() + minutos * 60_000;
+    }
+    const atualizada = await atualizarOrdemServidor(ordem.id, dados);
+    setEscolhendoEspera(null);
+    const final = atualizada ?? { ...ordem, ...dados };
+    if (status === 'recusada') {
+      setOrdens((prev) => prev.filter((o) => o.id !== ordem.id));
+      return;
+    }
+    setOrdens((prev) => prev.map((o) => (o.id === ordem.id ? (final as OrdemServico) : o)));
+    if (status === 'aceita') {
+      traçarRota(final as OrdemServico);
+    }
+  };
+
+  // Geocodifica o endereço da ordem e desenha a rota no mapa
+  const traçarRota = async (ordem: OrdemServico) => {
+    setRotaErro(null);
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    try {
+      const consulta = encodeURIComponent(`${ordem.endereco}, Arraial do Cabo, RJ, Brasil`);
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${consulta}`
+      );
+      const achados = (await res.json()) as Array<{ lat: string; lon: string }>;
+      const alvo = achados[0];
+      if (!alvo) {
+        setRotaErro('Não foi possível localizar o endereço informado pelo CIOSP.');
+        return;
+      }
+      const destino = { lat: parseFloat(alvo.lat), lng: parseFloat(alvo.lon) };
+
+      let pontos: [number, number][] = [
+        [position.lat, position.lng],
+        [destino.lat, destino.lng],
+      ];
+      try {
+        const rota = await fetch(
+          `https://router.project-osrm.org/route/v1/driving/${position.lng},${position.lat};${destino.lng},${destino.lat}?overview=full&geometries=geojson`
+        );
+        const dadosRota = (await rota.json()) as any;
+        const coords = dadosRota?.routes?.[0]?.geometry?.coordinates as
+          | [number, number][]
+          | undefined;
+        if (coords?.length) {
+          pontos = coords.map(([lng, lat]) => [lat, lng] as [number, number]);
+        }
+      } catch {
+        // mantém a linha reta como referência
+      }
+
+      if (rotaLayerRef.current) map.removeLayer(rotaLayerRef.current);
+      if (destinoMarkerRef.current) map.removeLayer(destinoMarkerRef.current);
+
+      const linha = L.polyline(pontos, { color: '#2563eb', weight: 5, opacity: 0.85 }).addTo(map);
+      const marcador = L.marker([destino.lat, destino.lng]).addTo(map);
+      marcador.bindPopup(`<strong>Destino da ordem</strong><br/>${ordem.endereco}`);
+      rotaLayerRef.current = linha;
+      destinoMarkerRef.current = marcador;
+      setAutoCenter(false);
+      map.fitBounds(linha.getBounds(), { padding: [40, 40] });
+      setRotaInfo({ ordemId: ordem.id, endereco: ordem.endereco });
+    } catch {
+      setRotaErro('Falha ao traçar a rota. Verifique a conexão e tente novamente.');
+    }
+  };
+
+  const limparRota = () => {
+    const map = mapInstanceRef.current;
+    if (map && rotaLayerRef.current) map.removeLayer(rotaLayerRef.current);
+    if (map && destinoMarkerRef.current) map.removeLayer(destinoMarkerRef.current);
+    rotaLayerRef.current = null;
+    destinoMarkerRef.current = null;
+    setRotaInfo(null);
+    setAutoCenter(true);
+  };
+
+  const ordensVisiveis = ordens.filter((o) => {
+    if (o.status === 'aguardando') return true;
+    if (o.status === 'espera') return true;
+    if (o.status === 'aceita') return rotaInfo?.ordemId === o.id;
+    return false;
+  });
+
   // Brasão do grupamento do usuário
   const grupamentoUsuario = GRUPAMENTOS.find((g) => g.sigla === usuarioAtivo?.grupamento) || GRUPAMENTOS[0];
   const brasaoImagem = grupamentoUsuario?.imagem;
+
 
   return (
     <div id="screen-motorista-mapa" className="space-y-4">
