@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Lock, Eye, EyeOff, LogIn, UserPlus, ArrowLeft, LogOut, CheckCircle2, AlertCircle, Shield, Droplets, Users, X, Pencil, Camera, Trash2, Upload, Crop, Navigation } from 'lucide-react';
 
-import { Screen, FuncaoPosto, SiglaGrupamento, UsuarioCadastrado, MapaOcupacaoPostos, OcupantePosto, Viatura } from './types';
+import { Screen, FuncaoPosto, SiglaGrupamento, UsuarioCadastrado, MapaOcupacaoPostos, OcupantePosto, Viatura, MembroEquipe } from './types';
 import { GRUPAMENTOS, MATRICULA_DESENVOLVEDOR } from './data/grupamentos';
 import { getUsuariosArmazenados, salvarUsuarios, getOcupacaoPostos, salvarOcupacaoPostos, LIMITES_POSTOS, OCUPACAO_INICIAL_POSTOS, getViaturasArmazenadas, salvarViaturas } from './services/storage';
 import {
@@ -25,6 +25,7 @@ import { DevViaturas } from './components/DevViaturas';
 import { ModalCortarFoto } from './components/ModalCortarFoto';
 import { MotoristaLocalizacao } from './components/MotoristaLocalizacao';
 import { CiospPainel } from './components/CiospPainel';
+import { EquipePainel } from './components/EquipePainel';
 
 export default function App() {
   // Navigation
@@ -369,10 +370,25 @@ export default function App() {
       setCurrentScreen('motorista-mapa');
     } else if (funcao === 'CIOSP') {
       setCurrentScreen('ciosp');
+    } else if (funcao === 'OPERACIONAL' || funcao === 'COORDENADOR DE EQUIPE') {
+      setCurrentScreen('equipe-ordens');
     } else {
       setCurrentScreen('opcao-funcao');
     }
   };
+
+  // Agentes do mesmo grupamento que estão nos postos embarcados (equipe da viatura)
+  const POSTOS_EMBARCADOS: FuncaoPosto[] = ['MOTORISTA', 'COORDENADOR DE EQUIPE', 'OPERACIONAL'];
+  const equipeDaViatura: MembroEquipe[] = POSTOS_EMBARCADOS.flatMap((posto) =>
+    (ocupacaoPostos[posto] || [])
+      .filter((oc) => !usuarioAtivo?.grupamento || !oc.grupamento || oc.grupamento === usuarioAtivo.grupamento || oc.grupamento === 'Desenvolvedor')
+      .map((oc) => ({
+        nomeDeGuerra: oc.nomeDeGuerra,
+        matricula: oc.matricula,
+        posto,
+        grupamento: oc.grupamento,
+      }))
+  );
 
   const handleDesocuparPosto = () => {
     if (!usuarioAtivo) return;
@@ -587,7 +603,7 @@ export default function App() {
 
       {/* Main Content Area */}
       <main id="main-area" className="flex-1 flex items-center justify-center p-4 sm:p-6">
-        <div className={`w-full ${currentScreen === 'motorista-mapa' || currentScreen === 'ciosp' ? 'max-w-4xl' : 'max-w-lg'} transition-all duration-200`}>
+        <div className={`w-full ${currentScreen === 'motorista-mapa' || currentScreen === 'ciosp' || currentScreen === 'equipe-ordens' ? 'max-w-4xl' : 'max-w-lg'} transition-all duration-200`}>
 
           {/* ========================================= */}
           {/* TELA 1: LOGIN                             */}
@@ -1501,6 +1517,22 @@ export default function App() {
               postoSelecionado={funcaoSelecionada || 'MOTORISTA'}
               ocupantesPosto={ocupacaoPostos['MOTORISTA'] || []}
               viaturas={viaturas}
+              equipe={equipeDaViatura}
+              onTrocarPosto={() => setCurrentScreen('posto-servico')}
+              onDesocuparPosto={handleDesocuparPosto}
+              onVoltarMenu={() => setCurrentScreen('menu')}
+            />
+          )}
+
+          {/* ========================================= */}
+          {/* TELA: OPERACIONAL / COORDENADOR - ORDENS  */}
+          {/* ========================================= */}
+          {currentScreen === 'equipe-ordens' && (
+            <EquipePainel
+              usuarioAtivo={usuarioAtivo}
+              posto={funcaoSelecionada || 'OPERACIONAL'}
+              ocupantesPosto={ocupacaoPostos[funcaoSelecionada || 'OPERACIONAL'] || []}
+              equipe={equipeDaViatura}
               onTrocarPosto={() => setCurrentScreen('posto-servico')}
               onDesocuparPosto={handleDesocuparPosto}
               onVoltarMenu={() => setCurrentScreen('menu')}
