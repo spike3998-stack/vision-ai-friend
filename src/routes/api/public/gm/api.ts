@@ -49,10 +49,10 @@ async function listarChecklists(db: Admin) {
 
 async function mapaPostos(db: Admin) {
   const { data } = await db.from("gm_postos").select("posto, ocupantes");
-  const mapa: Record<string, unknown[]> = {};
+  const mapa: Record<string, any[]> = {};
   for (const p of POSTOS_PADRAO) mapa[p] = [];
   for (const row of data ?? []) {
-    mapa[row.posto as string] = (row.ocupantes as unknown[]) ?? [];
+    mapa[row.posto as string] = (row.ocupantes as any[]) ?? [];
   }
   return mapa;
 }
