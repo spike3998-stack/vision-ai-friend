@@ -257,10 +257,56 @@ async function handle(body: any) {
       return json({ success: true, checklist });
     }
 
+    // ---------------- ORDENS DE SERVIÇO ----------------
+    case "ordens.listar": {
+      const { data } = await db
+        .from("gm_ordens")
+        .select("dados")
+        .order("criado_em", { ascending: false })
+        .limit(100);
+      return json((data ?? []).map((r) => r.dados as Record<string, unknown>));
+    }
+
+    case "ordens.criar": {
+      const o = body.ordem ?? {};
+      if (!o.grupamento || !o.endereco || !o.descricao) {
+        return json({ error: "Grupamento, endereço e descrição são obrigatórios." }, 400);
+      }
+      const id = o.id || `os-${Date.now()}`;
+      const ordem = {
+        observacoes: "",
+        ...o,
+        id,
+        status: "aguardando",
+        dataHora: o.dataHora || agora(),
+      };
+      await db.from("gm_ordens").upsert({ id, dados: ordem }, { onConflict: "id" });
+      return json({ success: true, ordem });
+    }
+
+    case "ordens.atualizar": {
+      const id = String(body.id ?? "");
+      const { data: existente } = await db
+        .from("gm_ordens")
+        .select("dados")
+        .eq("id", id)
+        .maybeSingle();
+      if (!existente) return json({ error: "Ordem não encontrada." }, 404);
+      const ordem = { ...((existente.dados as any) ?? {}), ...(body.dados ?? {}), id };
+      await db.from("gm_ordens").update({ dados: ordem }).eq("id", id);
+      return json({ success: true, ordem });
+    }
+
+    case "ordens.excluir": {
+      await db.from("gm_ordens").delete().eq("id", String(body.id));
+      return json({ success: true });
+    }
+
     default:
       return json({ error: `Ação desconhecida: ${acao}` }, 400);
   }
 }
+
 
 export const Route = createFileRoute("/api/public/gm/api")({
   server: {
