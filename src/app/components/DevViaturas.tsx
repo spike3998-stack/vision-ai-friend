@@ -512,11 +512,13 @@ export const DevViaturas: React.FC<DevViaturasProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 active:bg-blue-900 text-white font-bold text-xs uppercase cursor-pointer transition-colors flex items-center gap-1.5 shadow-xs"
+                  disabled={!formularioValido}
+                  className="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 active:bg-blue-900 text-white font-bold text-xs uppercase cursor-pointer transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-700"
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>Salvar Viatura</span>
                 </button>
+
               </div>
             </form>
           </div>
