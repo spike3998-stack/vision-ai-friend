@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
@@ -25,11 +25,17 @@ import {
   Gauge,
   FileText,
   ClipboardCheck,
+  Radio,
+  MapPin,
+  Clock,
+  ThumbsUp,
+  Ban,
 } from 'lucide-react';
-import { UsuarioCadastrado, OcupantePosto, Viatura } from '../types';
+import { UsuarioCadastrado, OcupantePosto, Viatura, OrdemServico } from '../types';
 import { GRUPAMENTOS } from '../data/grupamentos';
 import { getViaturasArmazenadas } from '../services/storage';
 import { ModalChecklistViatura } from './ModalChecklistViatura';
+import { fetchOrdensServidor, atualizarOrdemServidor } from '../services/api';
 
 interface MotoristaLocalizacaoProps {
   usuarioAtivo: UsuarioCadastrado | null;
