@@ -215,7 +215,7 @@ export default function App() {
     cadMatricula.trim() !== '' &&
     !matriculaDuplicada &&
     cadTipoSanguineo.trim() !== '' &&
-    cadGrupamento !== '' &&
+    Boolean(cadGrupamento) &&
     cadSenha.trim() !== '';
 
   const handleCadastro = async (e: React.FormEvent) => {
