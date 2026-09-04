@@ -314,66 +314,11 @@ export const MotoristaLocalizacao: React.FC<MotoristaLocalizacaoProps> = ({
   };
 
   // ============ ORDENS DE SERVIÇO ENVIADAS PELO CIOSP ============
-  const [ordens, setOrdens] = useState<OrdemServico[]>([]);
-  const [escolhendoEspera, setEscolhendoEspera] = useState<string | null>(null);
   const [rotaInfo, setRotaInfo] = useState<{ ordemId: string; endereco: string } | null>(null);
   const [rotaErro, setRotaErro] = useState<string | null>(null);
   const rotaLayerRef = useRef<L.Polyline | null>(null);
   const destinoMarkerRef = useRef<L.Marker | null>(null);
 
-  const carregarOrdens = useCallback(async () => {
-    const lista = await fetchOrdensServidor();
-    const grupo = usuarioAtivo?.grupamento;
-    const agoraMs = Date.now();
-    setOrdens(
-      lista.filter((o) => {
-        if (grupo && o.grupamento !== grupo) return false;
-        if (o.status === 'recusada') return false;
-        if (o.status === 'espera' && o.esperaAte && o.esperaAte < agoraMs) return true;
-        return true;
-      })
-    );
-  }, [usuarioAtivo?.grupamento]);
-
-  useEffect(() => {
-    carregarOrdens();
-    const t = window.setInterval(carregarOrdens, 6000);
-    return () => window.clearInterval(t);
-  }, [carregarOrdens]);
-
-  // Faz o tempo de espera expirar automaticamente na tela do motorista
-  const [, forcarRelogio] = useState(0);
-  useEffect(() => {
-    const t = window.setInterval(() => forcarRelogio((n) => n + 1), 1000);
-    return () => window.clearInterval(t);
-  }, []);
-
-  const responderOrdem = async (
-    ordem: OrdemServico,
-    status: 'aceita' | 'recusada' | 'espera',
-    minutos?: number
-  ) => {
-    const dados: Partial<OrdemServico> = {
-      status,
-      respondidoPor: usuarioAtivo?.nomeDeGuerra || 'MOTORISTA',
-      respondidoPorMatricula: usuarioAtivo?.matricula || '---',
-    };
-    if (status === 'espera' && minutos) {
-      dados.esperaMinutos = minutos;
-      dados.esperaAte = Date.now() + minutos * 60_000;
-    }
-    const atualizada = await atualizarOrdemServidor(ordem.id, dados);
-    setEscolhendoEspera(null);
-    const final = atualizada ?? { ...ordem, ...dados };
-    if (status === 'recusada') {
-      setOrdens((prev) => prev.filter((o) => o.id !== ordem.id));
-      return;
-    }
-    setOrdens((prev) => prev.map((o) => (o.id === ordem.id ? (final as OrdemServico) : o)));
-    if (status === 'aceita') {
-      traçarRota(final as OrdemServico);
-    }
-  };
 
   // Geocodifica o endereço da ordem e desenha a rota no mapa
   const traçarRota = async (ordem: OrdemServico) => {
