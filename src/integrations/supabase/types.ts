@@ -32,6 +32,27 @@ export type Database = {
         }
         Relationships: []
       }
+      gm_ordens: {
+        Row: {
+          atualizado_em: string
+          criado_em: string
+          dados: Json
+          id: string
+        }
+        Insert: {
+          atualizado_em?: string
+          criado_em?: string
+          dados: Json
+          id: string
+        }
+        Update: {
+          atualizado_em?: string
+          criado_em?: string
+          dados?: Json
+          id?: string
+        }
+        Relationships: []
+      }
       gm_postos: {
         Row: {
           atualizado_em: string
