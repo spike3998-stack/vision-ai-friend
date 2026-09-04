@@ -330,7 +330,7 @@ export const DevViaturas: React.FC<DevViaturasProps> = ({
                 <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs text-slate-600">
                   <div className="flex items-center gap-1.5">
                     <Gauge className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span>KM: {vtr.kmAtual || 'Não informado'}</span>
+                    <span>KM: {formatarKm(vtr.kmAtual || '') || 'Não informado'}</span>
                   </div>
                   <div className="flex items-center gap-1.5 truncate">
                     <Shield className="w-3.5 h-3.5 text-slate-400 shrink-0" />
