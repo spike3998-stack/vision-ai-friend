@@ -10,33 +10,43 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicGmApiRouteImport } from './routes/api/public/gm/api'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicGmApiRoute = ApiPublicGmApiRouteImport.update({
+  id: '/api/public/gm/api',
+  path: '/api/public/gm/api',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/public/gm/api': typeof ApiPublicGmApiRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/public/gm/api': typeof ApiPublicGmApiRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/public/gm/api': typeof ApiPublicGmApiRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/api/public/gm/api'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/api/public/gm/api'
+  id: '__root__' | '/' | '/api/public/gm/api'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiPublicGmApiRoute: typeof ApiPublicGmApiRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +58,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/gm/api': {
+      id: '/api/public/gm/api'
+      path: '/api/public/gm/api'
+      fullPath: '/api/public/gm/api'
+      preLoaderRoute: typeof ApiPublicGmApiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiPublicGmApiRoute: ApiPublicGmApiRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

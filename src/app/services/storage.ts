@@ -1,0 +1,276 @@
+import { UsuarioCadastrado, Viatura, MapaOcupacaoPostos, ChecklistViatura } from '../types';
+import { MATRICULA_DESENVOLVEDOR } from '../data/grupamentos';
+
+const STORAGE_KEY = 'gm_arraial_usuarios_v4';
+
+export const USUARIOS_INICIAIS: UsuarioCadastrado[] = [
+  {
+    id: 'dev-67549',
+    nomeCompleto: 'Joao pedro de souza',
+    nomeDeGuerra: 'TEIXEIRA',
+    matricula: MATRICULA_DESENVOLVEDOR,
+    tipoSanguineo: 'B+',
+    grupamento: 'ROMU',
+    senha: 'Joao123',
+    status: 'autorizado',
+    isDesenvolvedor: true,
+    dataCadastro: '03/09/2026 10:00',
+  },
+];
+
+export function getUsuariosArmazenados(): UsuarioCadastrado[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error('Erro ao ler localStorage', e);
+  }
+
+  // Inicializa com dados padrão
+  salvarUsuarios(USUARIOS_INICIAIS);
+  return USUARIOS_INICIAIS;
+}
+
+export function salvarUsuarios(usuarios: UsuarioCadastrado[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(usuarios));
+  } catch (e) {
+    console.error('Erro ao salvar no localStorage', e);
+  }
+}
+
+// Limites estritos definidos por regra operacional
+export const LIMITES_POSTOS: Record<string, number> = {
+  'TAC PONTAL CIMA': 2,
+  'TAC PONTAL BAIXO': 2,
+  'PROCURADORIA': 1,
+  'FÓRUM': 1,
+  'FORUM': 1,
+  'CIOSP': 1,
+  'CREAS': 1,
+  'PREFEITURA': 1,
+};
+
+const STORAGE_KEY_POSTOS = 'gm_arraial_postos_ocupacao_v3';
+
+export const OCUPACAO_INICIAL_POSTOS: MapaOcupacaoPostos = {
+  'CIOSP': [],
+  'COORDENADOR DE EQUIPE': [],
+  'MOTORISTA': [],
+  'OPERACIONAL': [],
+  'TAC PONTAL CIMA': [],
+  'TAC PONTAL BAIXO': [],
+  'PREFEITURA': [],
+  'PROCURADORIA': [],
+  'FÓRUM': [],
+  'CREAS': [],
+};
+
+export function getOcupacaoPostos(): MapaOcupacaoPostos {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_POSTOS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (typeof parsed === 'object' && parsed !== null) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error('Erro ao ler postos do localStorage', e);
+  }
+
+  salvarOcupacaoPostos(OCUPACAO_INICIAL_POSTOS);
+  return OCUPACAO_INICIAL_POSTOS;
+}
+
+export function salvarOcupacaoPostos(mapa: MapaOcupacaoPostos): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_POSTOS, JSON.stringify(mapa));
+  } catch (e) {
+    console.error('Erro ao salvar postos no localStorage', e);
+  }
+}
+
+// ==========================================
+// CONTROLE DE VIATURAS OPERACIONAIS
+// ==========================================
+const STORAGE_KEY_VIATURAS = 'gm_arraial_viaturas_v1';
+
+export const VIATURAS_INICIAIS: Viatura[] = [
+  {
+    id: 'vtr-romu-01',
+    prefixo: 'ROMU 01',
+    modelo: 'Renault Duster 4x4',
+    placa: 'RIO-1A23',
+    grupamento: 'ROMU',
+    status: 'disponivel',
+    kmAtual: '42.150 km',
+    observacoes: 'Giroflex, rádio comunicador e sirene operacional',
+    dataCadastro: '01/09/2026',
+  },
+  {
+    id: 'vtr-gtran-02',
+    prefixo: 'GTRAN 02',
+    modelo: 'Chevrolet Spin',
+    placa: 'RIO-4B56',
+    grupamento: 'GTRAN',
+    status: 'disponivel',
+    kmAtual: '38.800 km',
+    observacoes: 'Apoio de trânsito com cones e sinalização viária',
+    dataCadastro: '01/09/2026',
+  },
+  {
+    id: 'vtr-gres-03',
+    prefixo: 'GRES 03',
+    modelo: 'Toyota Hilux 4x4',
+    placa: 'RIO-7C89',
+    grupamento: 'GRES',
+    status: 'disponivel',
+    kmAtual: '29.300 km',
+    observacoes: 'Patrulhamento ambiental e orlas marítimas',
+    dataCadastro: '01/09/2026',
+  },
+  {
+    id: 'vtr-op-04',
+    prefixo: 'PATRULHA 04',
+    modelo: 'Renault Duster',
+    placa: 'RIO-9D12',
+    grupamento: 'OPERACIONAL',
+    status: 'disponivel',
+    kmAtual: '51.200 km',
+    observacoes: 'Ronda ostensiva Centro e bairros',
+    dataCadastro: '02/09/2026',
+  },
+  {
+    id: 'vtr-goc-05',
+    prefixo: 'GOC 05',
+    modelo: 'Mitsubishi L200',
+    placa: 'RIO-3E45',
+    grupamento: 'GOC',
+    status: 'disponivel',
+    kmAtual: '34.600 km',
+    observacoes: 'Viatura adaptada para canil da Guarda',
+    dataCadastro: '02/09/2026',
+  },
+];
+
+export function getViaturasArmazenadas(): Viatura[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_VIATURAS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error('Erro ao ler viaturas do localStorage', e);
+  }
+
+  salvarViaturas(VIATURAS_INICIAIS);
+  return VIATURAS_INICIAIS;
+}
+
+export function salvarViaturas(viaturas: Viatura[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_VIATURAS, JSON.stringify(viaturas));
+  } catch (e) {
+    console.error('Erro ao salvar viaturas no localStorage', e);
+  }
+}
+
+// ==========================================
+// CONTROLE DE CHECK-LISTS DE VIATURAS
+// ==========================================
+const STORAGE_KEY_CHECKLISTS = 'gm_arraial_checklists_viaturas_v1';
+
+export const CHECKLISTS_INICIAIS: ChecklistViatura[] = [
+  {
+    id: 'chk-init-01',
+    viaturaId: 'vtr-romu-01',
+    prefixoViatura: 'ROMU 01',
+    placaViatura: 'RIO-1A23',
+    modeloViatura: 'Renault Duster 4x4',
+    motoristaNome: 'SILVA',
+    motoristaMatricula: '10234',
+    motoristaGrupamento: 'ROMU',
+    dataHora: '03/09/2026 07:45',
+    kmAtual: '42.150 km',
+    nivelCombustivel: 'cheio',
+    pneusEstepe: 'conforme',
+    iluminacaoSirene: 'conforme',
+    freiosDirecao: 'conforme',
+    oleoFluidos: 'conforme',
+    limpeza: 'limpo',
+    avariasLataria: false,
+    detalhesAvarias: '',
+    radioComunicador: true,
+    documentosViatura: true,
+    kitSeguranca: true,
+    observacoesGerais: 'Viatura inspecionada no início do plantão diurno. Tudo operante.',
+    statusGeral: 'aprovada',
+  },
+  {
+    id: 'chk-init-02',
+    viaturaId: 'vtr-gtran-02',
+    prefixoViatura: 'GTRAN 02',
+    placaViatura: 'RIO-4B56',
+    modeloViatura: 'Chevrolet Spin',
+    motoristaNome: 'COSTA',
+    motoristaMatricula: '20456',
+    motoristaGrupamento: 'GTRAN',
+    dataHora: '02/09/2026 19:15',
+    kmAtual: '38.800 km',
+    nivelCombustivel: '3_4',
+    pneusEstepe: 'conforme',
+    iluminacaoSirene: 'conforme',
+    freiosDirecao: 'conforme',
+    oleoFluidos: 'conforme',
+    limpeza: 'regular',
+    avariasLataria: true,
+    detalhesAvarias: 'Pequeno arranhão pré-existente no para-choque traseiro lado direito.',
+    radioComunicador: true,
+    documentosViatura: true,
+    kitSeguranca: true,
+    observacoesGerais: 'Cones e fita zebrada presentes no porta-malas.',
+    statusGeral: 'aprovada_com_restricoes',
+  },
+];
+
+export function getChecklistsArmazenados(): ChecklistViatura[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_CHECKLISTS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error('Erro ao ler checklists do localStorage', e);
+  }
+
+  salvarChecklists(CHECKLISTS_INICIAIS);
+  return CHECKLISTS_INICIAIS;
+}
+
+export function salvarChecklists(checklists: ChecklistViatura[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_CHECKLISTS, JSON.stringify(checklists));
+  } catch (e) {
+    console.error('Erro ao salvar checklists no localStorage', e);
+  }
+}
+
+export function salvarNovoChecklist(novo: ChecklistViatura): ChecklistViatura[] {
+  const atuais = getChecklistsArmazenados();
+  const atualizados = [novo, ...atuais];
+  salvarChecklists(atualizados);
+  return atualizados;
+}
+
