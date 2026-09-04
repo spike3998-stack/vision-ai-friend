@@ -93,13 +93,17 @@ export const DevViaturas: React.FC<DevViaturasProps> = ({
     setViaturaEmEdicao(vtr);
     setPrefixo(vtr.prefixo);
     setModelo(vtr.modelo);
-    setPlaca(vtr.placa);
+    setPlaca(limparPlaca(vtr.placa));
     setGrupamento(vtr.grupamento);
     setStatus(vtr.status);
-    setKmAtual(vtr.kmAtual || '');
+    setKmAtual(formatarKm(vtr.kmAtual || ''));
     setObservacoes(vtr.observacoes || '');
     setModalAberto(true);
   };
+
+  const placaValida = PLACA_MERCOSUL_REGEX.test(placa);
+  const formularioValido =
+    prefixo.trim() !== '' && modelo.trim() !== '' && placaValida;
 
   const handleSalvar = (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,6 +112,13 @@ export const DevViaturas: React.FC<DevViaturasProps> = ({
       setTimeout(() => setFeedback(null), 3500);
       return;
     }
+    if (!placaValida) {
+      setFeedback('A placa deve seguir o padrão Mercosul (ex: ABC1D23).');
+      setTimeout(() => setFeedback(null), 3500);
+      return;
+    }
+
+    const kmFormatado = formatarKm(kmAtual);
 
     const novaOuAtualizada: Viatura = {
       id: viaturaEmEdicao?.id || `vtr-${Date.now()}`,
@@ -116,10 +127,11 @@ export const DevViaturas: React.FC<DevViaturasProps> = ({
       placa: placa.trim().toUpperCase(),
       grupamento,
       status,
-      kmAtual: kmAtual.trim() || undefined,
+      kmAtual: kmFormatado || undefined,
       observacoes: observacoes.trim() || undefined,
       dataCadastro: viaturaEmEdicao?.dataCadastro || new Date().toLocaleDateString('pt-BR'),
     };
+
 
     onSalvarViatura(novaOuAtualizada);
     setModalAberto(false);
