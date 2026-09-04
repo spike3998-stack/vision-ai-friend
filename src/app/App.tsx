@@ -1603,25 +1603,11 @@ export default function App() {
           {/* TELA: CONSULTAR LIVRO ATA                 */}
           {/* ========================================= */}
           {currentScreen === 'livro-ata' && (
-            <div id="screen-livro-ata" className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 text-center space-y-4 shadow-xs">
-              <h3 className="text-xl font-black text-slate-900 uppercase">
-                CONSULTAR LIVRO ATA
-              </h3>
-              <p className="text-sm text-slate-500">
-                Pronto para receber as regras e opções desta etapa.
-              </p>
-              <div className="pt-4">
-                <button
-                  type="button"
-                  onClick={() => setCurrentScreen('menu')}
-                  className="w-full py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm uppercase flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>VOLTAR</span>
-                </button>
-              </div>
+            <div id="screen-livro-ata">
+              <LivroAta usuarioAtivo={usuarioAtivo} onVoltar={() => setCurrentScreen('menu')} />
             </div>
           )}
+
 
         </div>
       </main>
