@@ -482,11 +482,13 @@ export const DevViaturas: React.FC<DevViaturasProps> = ({
                 </label>
                 <input
                   type="text"
+                  inputMode="numeric"
                   value={kmAtual}
-                  onChange={(e) => setKmAtual(e.target.value)}
-                  placeholder="Ex: 42.500 km"
+                  onChange={(e) => setKmAtual(formatarKm(e.target.value))}
+                  placeholder="Ex: 42.500"
                   className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 border border-slate-300 focus:bg-white focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none text-slate-900 font-medium"
                 />
+
               </div>
 
               <div>
