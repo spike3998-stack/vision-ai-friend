@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
@@ -25,11 +25,17 @@ import {
   Gauge,
   FileText,
   ClipboardCheck,
+  Radio,
+  MapPin,
+  Clock,
+  ThumbsUp,
+  Ban,
 } from 'lucide-react';
-import { UsuarioCadastrado, OcupantePosto, Viatura } from '../types';
+import { UsuarioCadastrado, OcupantePosto, Viatura, OrdemServico } from '../types';
 import { GRUPAMENTOS } from '../data/grupamentos';
 import { getViaturasArmazenadas } from '../services/storage';
 import { ModalChecklistViatura } from './ModalChecklistViatura';
+import { fetchOrdensServidor, atualizarOrdemServidor } from '../services/api';
 
 interface MotoristaLocalizacaoProps {
   usuarioAtivo: UsuarioCadastrado | null;
@@ -307,9 +313,142 @@ export const MotoristaLocalizacao: React.FC<MotoristaLocalizacaoProps> = ({
     setAutoCenter(true);
   };
 
+  // ============ ORDENS DE SERVIÇO ENVIADAS PELO CIOSP ============
+  const [ordens, setOrdens] = useState<OrdemServico[]>([]);
+  const [escolhendoEspera, setEscolhendoEspera] = useState<string | null>(null);
+  const [rotaInfo, setRotaInfo] = useState<{ ordemId: string; endereco: string } | null>(null);
+  const [rotaErro, setRotaErro] = useState<string | null>(null);
+  const rotaLayerRef = useRef<L.Polyline | null>(null);
+  const destinoMarkerRef = useRef<L.Marker | null>(null);
+
+  const carregarOrdens = useCallback(async () => {
+    const lista = await fetchOrdensServidor();
+    const grupo = usuarioAtivo?.grupamento;
+    const agoraMs = Date.now();
+    setOrdens(
+      lista.filter((o) => {
+        if (grupo && o.grupamento !== grupo) return false;
+        if (o.status === 'recusada') return false;
+        if (o.status === 'espera' && o.esperaAte && o.esperaAte < agoraMs) return true;
+        return true;
+      })
+    );
+  }, [usuarioAtivo?.grupamento]);
+
+  useEffect(() => {
+    carregarOrdens();
+    const t = window.setInterval(carregarOrdens, 6000);
+    return () => window.clearInterval(t);
+  }, [carregarOrdens]);
+
+  // Faz o tempo de espera expirar automaticamente na tela do motorista
+  const [, forcarRelogio] = useState(0);
+  useEffect(() => {
+    const t = window.setInterval(() => forcarRelogio((n) => n + 1), 1000);
+    return () => window.clearInterval(t);
+  }, []);
+
+  const responderOrdem = async (
+    ordem: OrdemServico,
+    status: 'aceita' | 'recusada' | 'espera',
+    minutos?: number
+  ) => {
+    const dados: Partial<OrdemServico> = {
+      status,
+      respondidoPor: usuarioAtivo?.nomeDeGuerra || 'MOTORISTA',
+      respondidoPorMatricula: usuarioAtivo?.matricula || '---',
+    };
+    if (status === 'espera' && minutos) {
+      dados.esperaMinutos = minutos;
+      dados.esperaAte = Date.now() + minutos * 60_000;
+    }
+    const atualizada = await atualizarOrdemServidor(ordem.id, dados);
+    setEscolhendoEspera(null);
+    const final = atualizada ?? { ...ordem, ...dados };
+    if (status === 'recusada') {
+      setOrdens((prev) => prev.filter((o) => o.id !== ordem.id));
+      return;
+    }
+    setOrdens((prev) => prev.map((o) => (o.id === ordem.id ? (final as OrdemServico) : o)));
+    if (status === 'aceita') {
+      traçarRota(final as OrdemServico);
+    }
+  };
+
+  // Geocodifica o endereço da ordem e desenha a rota no mapa
+  const traçarRota = async (ordem: OrdemServico) => {
+    setRotaErro(null);
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    try {
+      const consulta = encodeURIComponent(`${ordem.endereco}, Arraial do Cabo, RJ, Brasil`);
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${consulta}`
+      );
+      const achados = (await res.json()) as Array<{ lat: string; lon: string }>;
+      const alvo = achados[0];
+      if (!alvo) {
+        setRotaErro('Não foi possível localizar o endereço informado pelo CIOSP.');
+        return;
+      }
+      const destino = { lat: parseFloat(alvo.lat), lng: parseFloat(alvo.lon) };
+
+      let pontos: [number, number][] = [
+        [position.lat, position.lng],
+        [destino.lat, destino.lng],
+      ];
+      try {
+        const rota = await fetch(
+          `https://router.project-osrm.org/route/v1/driving/${position.lng},${position.lat};${destino.lng},${destino.lat}?overview=full&geometries=geojson`
+        );
+        const dadosRota = (await rota.json()) as any;
+        const coords = dadosRota?.routes?.[0]?.geometry?.coordinates as
+          | [number, number][]
+          | undefined;
+        if (coords?.length) {
+          pontos = coords.map(([lng, lat]) => [lat, lng] as [number, number]);
+        }
+      } catch {
+        // mantém a linha reta como referência
+      }
+
+      if (rotaLayerRef.current) map.removeLayer(rotaLayerRef.current);
+      if (destinoMarkerRef.current) map.removeLayer(destinoMarkerRef.current);
+
+      const linha = L.polyline(pontos, { color: '#2563eb', weight: 5, opacity: 0.85 }).addTo(map);
+      const marcador = L.marker([destino.lat, destino.lng]).addTo(map);
+      marcador.bindPopup(`<strong>Destino da ordem</strong><br/>${ordem.endereco}`);
+      rotaLayerRef.current = linha;
+      destinoMarkerRef.current = marcador;
+      setAutoCenter(false);
+      map.fitBounds(linha.getBounds(), { padding: [40, 40] });
+      setRotaInfo({ ordemId: ordem.id, endereco: ordem.endereco });
+    } catch {
+      setRotaErro('Falha ao traçar a rota. Verifique a conexão e tente novamente.');
+    }
+  };
+
+  const limparRota = () => {
+    const map = mapInstanceRef.current;
+    if (map && rotaLayerRef.current) map.removeLayer(rotaLayerRef.current);
+    if (map && destinoMarkerRef.current) map.removeLayer(destinoMarkerRef.current);
+    rotaLayerRef.current = null;
+    destinoMarkerRef.current = null;
+    setRotaInfo(null);
+    setAutoCenter(true);
+  };
+
+  const ordensVisiveis = ordens.filter((o) => {
+    if (o.status === 'aguardando') return true;
+    if (o.status === 'espera') return true;
+    if (o.status === 'aceita') return rotaInfo?.ordemId === o.id;
+    return false;
+  });
+
   // Brasão do grupamento do usuário
   const grupamentoUsuario = GRUPAMENTOS.find((g) => g.sigla === usuarioAtivo?.grupamento) || GRUPAMENTOS[0];
   const brasaoImagem = grupamentoUsuario?.imagem;
+
 
   return (
     <div id="screen-motorista-mapa" className="space-y-4">
@@ -339,10 +478,11 @@ export const MotoristaLocalizacao: React.FC<MotoristaLocalizacaoProps> = ({
                 POSTO OPERACIONAL
               </span>
               <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-white mt-1">
-                VIATURA • {usuarioAtivo?.nomeDeGuerra || 'CONDUTOR'}
+                {usuarioAtivo?.nomeDeGuerra || 'CONDUTOR'}
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                Condutor: {postoSelecionado || 'MOTORISTA'} (Matrícula: {usuarioAtivo?.matricula})
+                Matrícula: {usuarioAtivo?.matricula}
+
                 {viaturaSelecionada && (
                   <span className="ml-1.5 text-blue-400 font-bold">
                     • VTR: {viaturaSelecionada.prefixo} ({viaturaSelecionada.placa})
@@ -432,6 +572,142 @@ export const MotoristaLocalizacao: React.FC<MotoristaLocalizacaoProps> = ({
           </div>
         )}
       </div>
+
+      {/* ORDENS DE SERVIÇO RECEBIDAS DO CIOSP */}
+      {ordensVisiveis.length > 0 && (
+        <div className="space-y-2.5">
+          {ordensVisiveis.map((ordem) => {
+            const emEspera =
+              ordem.status === 'espera' && !!ordem.esperaAte && ordem.esperaAte > Date.now();
+            const restanteSeg = emEspera
+              ? Math.max(0, Math.ceil(((ordem.esperaAte as number) - Date.now()) / 1000))
+              : 0;
+            return (
+              <div
+                key={ordem.id}
+                className="bg-white border-2 border-blue-500 rounded-2xl p-4 shadow-md space-y-3 animate-in"
+              >
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-white bg-blue-600 px-2.5 py-1 rounded-md flex items-center gap-1.5">
+                    <Radio className="w-3.5 h-3.5" />
+                    <span>Nova ordem de serviço • CIOSP</span>
+                  </span>
+                  <span className="text-[11px] text-slate-500 font-medium">{ordem.dataHora}</span>
+                </div>
+
+                <p className="text-sm font-black text-slate-900 uppercase">{ordem.descricao}</p>
+                <p className="text-xs text-slate-700 flex items-start gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
+                  <span>{ordem.endereco}</span>
+                </p>
+                {ordem.observacoes && (
+                  <p className="text-xs text-slate-500">Obs.: {ordem.observacoes}</p>
+                )}
+
+                {ordem.status === 'aceita' && (
+                  <div className="flex items-center justify-between gap-2 flex-wrap bg-emerald-50 border border-emerald-200 rounded-xl p-2.5">
+                    <span className="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Ordem aceita • rota traçada no mapa</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={limparRota}
+                      className="px-2.5 py-1.5 rounded-lg bg-white border border-emerald-300 text-[11px] font-black uppercase text-emerald-700 cursor-pointer hover:bg-emerald-100"
+                    >
+                      Encerrar rota
+                    </button>
+                  </div>
+                )}
+
+                {emEspera && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-2.5 flex items-center justify-between gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-blue-800 flex items-center gap-1.5">
+                      <Clock className="w-4 h-4" />
+                      <span>
+                        Em espera • restam {Math.floor(restanteSeg / 60)}:
+                        {String(restanteSeg % 60).padStart(2, '0')}
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => responderOrdem(ordem, 'aceita')}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black uppercase cursor-pointer"
+                    >
+                      Aceitar agora
+                    </button>
+                  </div>
+                )}
+
+                {escolhendoEspera === ordem.id && (
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+                    <p className="text-[11px] font-black uppercase text-slate-600">
+                      Selecione o tempo de espera:
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[5, 10, 15].map((min) => (
+                        <button
+                          key={min}
+                          type="button"
+                          onClick={() => responderOrdem(ordem, 'espera', min)}
+                          className="py-2.5 rounded-xl border border-slate-300 hover:border-blue-500 hover:bg-blue-50 text-xs font-black text-slate-800 cursor-pointer"
+                        >
+                          {min} MIN
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEscolhendoEspera(null)}
+                      className="text-[11px] font-bold text-slate-500 hover:text-slate-800 cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                )}
+
+                {(ordem.status === 'aguardando' || (ordem.status === 'espera' && !emEspera)) &&
+                  escolhendoEspera !== ordem.id && (
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => responderOrdem(ordem, 'recusada')}
+                        className="py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black uppercase flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Ban className="w-3.5 h-3.5" />
+                        <span>Recusar</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEscolhendoEspera(ordem.id)}
+                        className="py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-black uppercase flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>Espera</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => responderOrdem(ordem, 'aceita')}
+                        className="py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <ThumbsUp className="w-3.5 h-3.5" />
+                        <span>Aceitar</span>
+                      </button>
+                    </div>
+                  )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {rotaErro && (
+        <div className="bg-amber-50 border border-amber-300 rounded-xl p-3 text-xs font-bold text-amber-800">
+          {rotaErro}
+        </div>
+      )}
+
+
 
       {/* ÁREA DO MAPA DE RUAS */}
       <div className="bg-white border-2 border-slate-300 rounded-2xl overflow-hidden shadow-sm relative">

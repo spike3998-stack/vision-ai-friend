@@ -1,4 +1,4 @@
-import { UsuarioCadastrado, Viatura, MapaOcupacaoPostos, ChecklistViatura, OcupantePosto } from '../types';
+import { UsuarioCadastrado, Viatura, MapaOcupacaoPostos, ChecklistViatura, OcupantePosto, OrdemServico } from '../types';
 import {
   getUsuariosArmazenados,
   salvarUsuarios,
@@ -177,4 +177,25 @@ export async function fetchChecklistsServidor(): Promise<ChecklistViatura[]> {
 export async function enviarChecklistServidor(chk: ChecklistViatura): Promise<boolean> {
   const data = await chamar<any>({ acao: 'checklists.criar', checklist: chk });
   return Boolean(data?.success);
+}
+
+/** ORDENS DE SERVIÇO (CIOSP) */
+export async function fetchOrdensServidor(): Promise<OrdemServico[]> {
+  const data = await chamar<OrdemServico[]>({ acao: 'ordens.listar' });
+  return Array.isArray(data) ? data : [];
+}
+
+export async function criarOrdemServidor(
+  ordem: Partial<OrdemServico>
+): Promise<OrdemServico | null> {
+  const data = await chamar<any>({ acao: 'ordens.criar', ordem });
+  return data?.ordem ?? null;
+}
+
+export async function atualizarOrdemServidor(
+  id: string,
+  dados: Partial<OrdemServico>
+): Promise<OrdemServico | null> {
+  const data = await chamar<any>({ acao: 'ordens.atualizar', id, dados });
+  return data?.ordem ?? null;
 }
