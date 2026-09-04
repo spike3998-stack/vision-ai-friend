@@ -36,9 +36,9 @@ export interface Viatura {
   placa: string;
   grupamento: string;
   status: 'disponivel' | 'em_operacao' | 'manutencao';
-  kmAtual?: string;
-  observacoes?: string;
-  dataCadastro?: string;
+  kmAtual?: string | undefined;
+  observacoes?: string | undefined;
+  dataCadastro?: string | undefined;
 }
 
 export interface GrupamentoItem {
@@ -54,17 +54,17 @@ export interface UsuarioCadastrado {
   matricula: string;
   tipoSanguineo: string;
   grupamento: SiglaGrupamento;
-  foto?: string;
-  senha?: string;
+  foto?: string | undefined;
+  senha?: string | undefined;
   status: StatusCadastro;
-  isDesenvolvedor?: boolean;
+  isDesenvolvedor?: boolean | undefined;
   dataCadastro: string;
 }
 
 export interface OcupantePosto {
   matricula: string;
   nomeDeGuerra: string;
-  grupamento?: SiglaGrupamento | 'Desenvolvedor';
+  grupamento?: SiglaGrupamento | 'Desenvolvedor' | undefined;
   dataHora: string;
 }
 
@@ -75,7 +75,7 @@ export interface ChecklistViatura {
   viaturaId: string;
   prefixoViatura: string;
   placaViatura: string;
-  modeloViatura?: string;
+  modeloViatura?: string | undefined;
   motoristaNome: string;
   motoristaMatricula: string;
   motoristaGrupamento: string;
@@ -88,10 +88,10 @@ export interface ChecklistViatura {
   oleoFluidos: 'conforme' | 'baixo';
   limpeza: 'limpo' | 'regular' | 'sujo';
   avariasLataria: boolean;
-  detalhesAvarias?: string;
+  detalhesAvarias?: string | undefined;
   radioComunicador: boolean;
   documentosViatura: boolean;
   kitSeguranca: boolean;
-  observacoesGerais?: string;
+  observacoesGerais?: string | undefined;
   statusGeral: 'aprovada' | 'aprovada_com_restricoes' | 'inapta';
 }

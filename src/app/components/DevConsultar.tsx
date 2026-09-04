@@ -76,7 +76,7 @@ export const DevConsultar: React.FC<DevConsultarProps> = ({
     if (files && files.length > 0) {
       try {
         setEditCarregandoFoto(true);
-        const rawUrl = await lerArquivoParaEdicao(files[0]);
+        const rawUrl = await lerArquivoParaEdicao(files[0]!);
         setImagemParaCortar(rawUrl);
       } catch (err: any) {
         setFeedback(err?.message || 'Erro ao carregar foto.');
@@ -256,7 +256,7 @@ export const DevConsultar: React.FC<DevConsultarProps> = ({
                             title={`Brasão ${usuario.grupamento}`}
                           >
                             <img
-                              src={grupamento.imagem}
+                              src={grupamento!.imagem}
                               alt={`Brasão ${usuario.grupamento}`}
                               className="w-full h-full object-contain"
                               referrerPolicy="no-referrer"
@@ -383,7 +383,7 @@ export const DevConsultar: React.FC<DevConsultarProps> = ({
                     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                       try {
                         setEditCarregandoFoto(true);
-                        const rawUrl = await lerArquivoParaEdicao(e.dataTransfer.files[0]);
+                        const rawUrl = await lerArquivoParaEdicao(e.dataTransfer.files[0]!);
                         setImagemParaCortar(rawUrl);
                       } catch (err: any) {
                         setFeedback(err?.message || 'Erro ao carregar foto.');

@@ -215,7 +215,7 @@ export const DevAutorizar: React.FC<DevAutorizarProps> = ({
                           title={`Brasão ${usuario.grupamento}`}
                         >
                           <img
-                            src={grupamento.imagem}
+                            src={grupamento!.imagem}
                             alt={`Brasão ${usuario.grupamento}`}
                             className="w-full h-full object-contain"
                             referrerPolicy="no-referrer"

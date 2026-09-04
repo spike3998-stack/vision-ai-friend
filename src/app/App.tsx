@@ -403,7 +403,7 @@ export default function App() {
       try {
         setEditPerfilCarregandoFoto(true);
         setEditPerfilError(null);
-        const rawUrl = await lerArquivoParaEdicao(file);
+        const rawUrl = await lerArquivoParaEdicao(file!);
         setImagemParaCortarPerfil(rawUrl);
       } catch (err: any) {
         setEditPerfilError(err?.message || 'Falha ao processar a foto.');
@@ -735,7 +735,7 @@ export default function App() {
                       if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                         try {
                           setCadCarregandoFoto(true);
-                          const rawUrl = await lerArquivoParaEdicao(e.dataTransfer.files[0]);
+                          const rawUrl = await lerArquivoParaEdicao(e.dataTransfer.files[0]!);
                           setImagemParaCortarCadastro(rawUrl);
                         } catch (err: any) {
                           setAuthError(err?.message || 'Erro ao carregar foto.');
@@ -783,7 +783,7 @@ export default function App() {
                           if (file) {
                             try {
                               setCadCarregandoFoto(true);
-                              const rawUrl = await lerArquivoParaEdicao(file);
+                              const rawUrl = await lerArquivoParaEdicao(file!);
                               setImagemParaCortarCadastro(rawUrl);
                             } catch (err: any) {
                               setAuthError(err?.message || 'Erro ao carregar foto.');
@@ -1112,7 +1112,7 @@ export default function App() {
                             title={`Brasão ${usuarioAtivo?.grupamento || 'Grupamento'}`}
                           >
                             <img
-                              src={grupamentoAtual.imagem}
+                              src={grupamentoAtual!.imagem}
                               alt={`Brasão ${usuarioAtivo?.grupamento || 'Grupamento'}`}
                               className="w-full h-full object-contain"
                               referrerPolicy="no-referrer"

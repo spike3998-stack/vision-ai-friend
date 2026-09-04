@@ -251,7 +251,7 @@ export const MotoristaLocalizacao: React.FC<MotoristaLocalizacaoProps> = ({
       simulationTimerRef.current = window.setInterval(() => {
         simulationStepRef.current = (simulationStepRef.current + 1) % rotaPatrulha.length;
         const nextPoint = rotaPatrulha[simulationStepRef.current];
-        setPosition({ lat: nextPoint.lat, lng: nextPoint.lng });
+        setPosition({ lat: nextPoint!.lat, lng: nextPoint!.lng });
       }, 3500);
     } else {
       if (simulationTimerRef.current) {

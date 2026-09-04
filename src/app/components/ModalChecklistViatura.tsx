@@ -88,7 +88,7 @@ export const ModalChecklistViatura: React.FC<ModalChecklistViaturaProps> = ({
           setKmAtual(viaturaSelecionadaPadrao.kmAtual.replace(/[^\d]/g, ''));
         }
       } else if (viaturas.length > 0 && !viaturaId) {
-        setViaturaId(viaturas[0].id);
+        setViaturaId(viaturas[0]!.id);
       }
     }
   }, [aberto, viaturaSelecionadaPadrao, viaturas]);
