@@ -25,11 +25,6 @@ import {
   Gauge,
   FileText,
   ClipboardCheck,
-  Radio,
-  MapPin,
-  Clock,
-  ThumbsUp,
-  Ban,
 } from 'lucide-react';
 import { UsuarioCadastrado, OcupantePosto, Viatura, OrdemServico, MembroEquipe } from '../types';
 import { GRUPAMENTOS } from '../data/grupamentos';
