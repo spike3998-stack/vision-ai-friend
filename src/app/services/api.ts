@@ -10,300 +10,171 @@ import {
   salvarChecklists,
 } from './storage';
 
-const API_BASE = '/api';
+const API_URL = '/api/public/gm/api';
 
-/**
- * Busca todos os usuários cadastrados diretamente do servidor central.
- * Atualiza o cache local para contingência offline.
- */
-export async function fetchUsuariosServidor(): Promise<UsuarioCadastrado[]> {
+async function chamar<T = any>(payload: Record<string, unknown>): Promise<T | null> {
   try {
-    const res = await fetch(`${API_BASE}/usuarios`);
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        salvarUsuarios(data);
-        return data;
-      }
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      console.warn('[API] Resposta com erro:', data);
+      return null;
     }
+    return data as T;
   } catch (err) {
-    console.warn('[API] Servidor offline ou indisponível, usando cache local:', err);
+    console.warn('[API] Servidor indisponível:', err);
+    return null;
+  }
+}
+
+/** Busca todos os usuários cadastrados no servidor central. */
+export async function fetchUsuariosServidor(): Promise<UsuarioCadastrado[]> {
+  const data = await chamar<UsuarioCadastrado[]>({ acao: 'usuarios.listar' });
+  if (Array.isArray(data) && data.length > 0) {
+    salvarUsuarios(data);
+    return data;
   }
   return getUsuariosArmazenados();
 }
 
-/**
- * Registra novo cadastro ou atualiza no servidor central.
- */
+/** Registra novo cadastro ou atualiza no servidor central. */
 export async function cadastrarUsuarioServidor(
   usuario: Partial<UsuarioCadastrado>
 ): Promise<{ success: boolean; usuario?: UsuarioCadastrado; mensagem?: string; error?: string }> {
-  try {
-    const res = await fetch(`${API_BASE}/usuarios/cadastro`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(usuario),
-    });
-
-    const data = await res.json();
-    if (res.ok && data.usuario) {
-      // Atualiza lista local com o retornado
-      const atuais = getUsuariosArmazenados();
-      const filtrados = atuais.filter((u) => u.matricula !== data.usuario.matricula);
-      salvarUsuarios([...filtrados, data.usuario]);
-      return { success: true, usuario: data.usuario, mensagem: data.mensagem };
-    }
-    return { success: false, error: data.error || 'Erro ao registrar cadastro no servidor.' };
-  } catch (err) {
-    console.error('[API] Erro ao cadastrar no servidor:', err);
-    return { success: false, error: 'Falha de conexão com o servidor central.' };
+  const data = await chamar<any>({ acao: 'usuarios.cadastro', usuario });
+  if (data?.usuario) {
+    const atuais = getUsuariosArmazenados();
+    const filtrados = atuais.filter((u) => u.matricula !== data.usuario.matricula);
+    salvarUsuarios([...filtrados, data.usuario]);
+    return { success: true, usuario: data.usuario, mensagem: data.mensagem };
   }
+  return { success: false, error: data?.error || 'Falha de conexão com o servidor central.' };
 }
 
-/**
- * Altera status do usuário (autorizado / negado) - Apenas Desenvolvedor.
- */
+/** Altera status do usuário (autorizado / negado) - Apenas Desenvolvedor. */
 export async function alterarStatusUsuarioServidor(
   usuarioId: string,
   novoStatus: 'autorizado' | 'negado'
 ): Promise<boolean> {
-  try {
-    const res = await fetch(`${API_BASE}/usuarios/${usuarioId}/status`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: novoStatus }),
-    });
-
-    if (res.ok) {
-      const atuais = getUsuariosArmazenados();
-      const atualizados = atuais.map((u) =>
+  const data = await chamar<any>({ acao: 'usuarios.status', usuarioId, status: novoStatus });
+  if (data?.success) {
+    const atuais = getUsuariosArmazenados();
+    salvarUsuarios(
+      atuais.map((u) =>
         u.id === usuarioId || u.matricula === usuarioId ? { ...u, status: novoStatus } : u
-      );
-      salvarUsuarios(atualizados);
-      return true;
-    }
-  } catch (err) {
-    console.error('[API] Erro ao alterar status no servidor:', err);
+      )
+    );
+    return true;
   }
   return false;
 }
 
-/**
- * Atualiza dados completos de um usuário no servidor.
- */
+/** Atualiza dados completos de um usuário no servidor. */
 export async function atualizarUsuarioServidor(
   usuarioId: string,
   dados: Partial<UsuarioCadastrado>
 ): Promise<boolean> {
-  try {
-    const res = await fetch(`${API_BASE}/usuarios/${usuarioId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(dados),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      if (data.usuario) {
-        const atuais = getUsuariosArmazenados();
-        const atualizados = atuais.map((u) =>
-          u.id === usuarioId || u.matricula === usuarioId ? data.usuario : u
-        );
-        salvarUsuarios(atualizados);
-      }
-      return true;
-    }
-  } catch (err) {
-    console.error('[API] Erro ao atualizar usuário no servidor:', err);
+  const data = await chamar<any>({ acao: 'usuarios.atualizar', usuarioId, dados });
+  if (data?.success) {
+    const atuais = getUsuariosArmazenados();
+    salvarUsuarios(
+      atuais.map((u) => (u.id === usuarioId || u.matricula === usuarioId ? data.usuario : u))
+    );
+    return true;
   }
   return false;
 }
 
-/**
- * Exclui usuário no servidor.
- */
+/** Exclui usuário no servidor. */
 export async function excluirUsuarioServidor(usuarioId: string): Promise<boolean> {
-  try {
-    const res = await fetch(`${API_BASE}/usuarios/${usuarioId}`, {
-      method: 'DELETE',
-    });
-
-    if (res.ok) {
-      const atuais = getUsuariosArmazenados();
-      const atualizados = atuais.filter((u) => u.id !== usuarioId && u.matricula !== usuarioId);
-      salvarUsuarios(atualizados);
-      return true;
-    }
-  } catch (err) {
-    console.error('[API] Erro ao excluir usuário no servidor:', err);
+  const data = await chamar<any>({ acao: 'usuarios.excluir', usuarioId });
+  if (data?.success) {
+    const atuais = getUsuariosArmazenados();
+    salvarUsuarios(atuais.filter((u) => u.id !== usuarioId && u.matricula !== usuarioId));
+    return true;
   }
   return false;
 }
 
-/**
- * Zera todos os cadastros no servidor, mantendo exclusivamente o Desenvolvedor.
- */
+/** Zera todos os cadastros, mantendo exclusivamente o Desenvolvedor. */
 export async function zerarCadastrosServidor(): Promise<UsuarioCadastrado[] | null> {
-  try {
-    const res = await fetch(`${API_BASE}/usuarios/zerar`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data.usuarios)) {
-        salvarUsuarios(data.usuarios);
-        return data.usuarios;
-      }
-    }
-  } catch (err) {
-    console.error('[API] Erro ao zerar cadastros no servidor:', err);
+  const data = await chamar<any>({ acao: 'usuarios.zerar' });
+  if (Array.isArray(data?.usuarios)) {
+    salvarUsuarios(data.usuarios);
+    return data.usuarios;
   }
   return null;
 }
 
-/**
- * POSTOS DE SERVIÇO: Busca ocupação atual do servidor.
- */
+/** POSTOS DE SERVIÇO: busca ocupação atual. */
 export async function fetchPostosServidor(): Promise<MapaOcupacaoPostos> {
-  try {
-    const res = await fetch(`${API_BASE}/postos`);
-    if (res.ok) {
-      const data = await res.json();
-      salvarOcupacaoPostos(data);
-      return data;
-    }
-  } catch (err) {
-    console.warn('[API] Erro ao buscar postos do servidor:', err);
+  const data = await chamar<MapaOcupacaoPostos>({ acao: 'postos.listar' });
+  if (data) {
+    salvarOcupacaoPostos(data);
+    return data;
   }
   return getOcupacaoPostos();
 }
 
-/**
- * Ocupa posto no servidor.
- */
 export async function ocuparPostoServidor(
   posto: string,
   ocupante: OcupantePosto
 ): Promise<MapaOcupacaoPostos | null> {
-  try {
-    const res = await fetch(`${API_BASE}/postos/ocupar`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ posto, ocupante }),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      salvarOcupacaoPostos(data.postos);
-      return data.postos;
-    }
-  } catch (err) {
-    console.error('[API] Erro ao ocupar posto no servidor:', err);
+  const data = await chamar<any>({ acao: 'postos.ocupar', posto, ocupante });
+  if (data?.postos) {
+    salvarOcupacaoPostos(data.postos);
+    return data.postos;
   }
   return null;
 }
 
-/**
- * Desocupa posto no servidor.
- */
 export async function desocuparPostoServidor(
   posto?: string,
   matricula?: string
 ): Promise<MapaOcupacaoPostos | null> {
-  try {
-    const res = await fetch(`${API_BASE}/postos/desocupar`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ posto, matricula }),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      salvarOcupacaoPostos(data.postos);
-      return data.postos;
-    }
-  } catch (err) {
-    console.error('[API] Erro ao desocupar posto no servidor:', err);
+  const data = await chamar<any>({ acao: 'postos.desocupar', posto, matricula });
+  if (data?.postos) {
+    salvarOcupacaoPostos(data.postos);
+    return data.postos;
   }
   return null;
 }
 
-/**
- * VIATURAS: Busca do servidor.
- */
+/** VIATURAS */
 export async function fetchViaturasServidor(): Promise<Viatura[]> {
-  try {
-    const res = await fetch(`${API_BASE}/viaturas`);
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        salvarViaturas(data);
-        return data;
-      }
-    }
-  } catch (err) {
-    console.warn('[API] Erro ao buscar viaturas do servidor:', err);
+  const data = await chamar<Viatura[]>({ acao: 'viaturas.listar' });
+  if (Array.isArray(data)) {
+    salvarViaturas(data);
+    return data;
   }
   return getViaturasArmazenadas();
 }
 
 export async function salvarViaturaServidor(viatura: Partial<Viatura>): Promise<boolean> {
-  try {
-    const url = viatura.id ? `${API_BASE}/viaturas/${viatura.id}` : `${API_BASE}/viaturas`;
-    const method = viatura.id ? 'PUT' : 'POST';
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(viatura),
-    });
-    return res.ok;
-  } catch (err) {
-    console.error('[API] Erro ao salvar viatura no servidor:', err);
-    return false;
-  }
+  const data = await chamar<any>({ acao: 'viaturas.salvar', viatura });
+  return Boolean(data?.success);
 }
 
 export async function excluirViaturaServidor(id: string): Promise<boolean> {
-  try {
-    const res = await fetch(`${API_BASE}/viaturas/${id}`, { method: 'DELETE' });
-    return res.ok;
-  } catch (err) {
-    console.error('[API] Erro ao excluir viatura no servidor:', err);
-    return false;
-  }
+  const data = await chamar<any>({ acao: 'viaturas.excluir', id });
+  return Boolean(data?.success);
 }
 
-/**
- * CHECK-LISTS: Busca e envio ao servidor.
- */
+/** CHECK-LISTS */
 export async function fetchChecklistsServidor(): Promise<ChecklistViatura[]> {
-  try {
-    const res = await fetch(`${API_BASE}/checklists`);
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        salvarChecklists(data);
-        return data;
-      }
-    }
-  } catch (err) {
-    console.warn('[API] Erro ao buscar checklists do servidor:', err);
+  const data = await chamar<ChecklistViatura[]>({ acao: 'checklists.listar' });
+  if (Array.isArray(data)) {
+    salvarChecklists(data);
+    return data;
   }
   return getChecklistsArmazenados();
 }
 
 export async function enviarChecklistServidor(chk: ChecklistViatura): Promise<boolean> {
-  try {
-    const res = await fetch(`${API_BASE}/checklists`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(chk),
-    });
-    return res.ok;
-  } catch (err) {
-    console.error('[API] Erro ao enviar checklist ao servidor:', err);
-    return false;
-  }
+  const data = await chamar<any>({ acao: 'checklists.criar', checklist: chk });
+  return Boolean(data?.success);
 }
