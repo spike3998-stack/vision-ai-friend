@@ -1340,12 +1340,6 @@ export default function App() {
                     >
                       <span className="font-black text-sm sm:text-base uppercase tracking-wider flex items-center gap-2">
                         <span>{func.nome}</span>
-                        {func.nome === 'MOTORISTA' && (
-                          <span className="text-[10px] font-black uppercase text-blue-700 bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-md flex items-center gap-1">
-                            <Navigation className="w-3 h-3 text-blue-600" />
-                            <span>GPS MAPA</span>
-                          </span>
-                        )}
                       </span>
 
                       {/* BADGE DE CAPACIDADE / STATUS */}
