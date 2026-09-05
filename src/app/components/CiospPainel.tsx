@@ -256,8 +256,51 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
                     </button>
                   )}
                 </div>
-                <span className="text-[11px] text-slate-500 font-medium">{ordem.dataHora}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-slate-500 font-medium">{ordem.dataHora}</span>
+                  <button
+                    type="button"
+                    onClick={() => abrirEdicao(ordem)}
+                    aria-label="Editar ordem de serviço"
+                    className="p-1.5 rounded-lg border border-slate-200 bg-white hover:border-blue-500 hover:bg-blue-50 cursor-pointer"
+                  >
+                    <Pencil className="w-3.5 h-3.5 text-slate-600" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setExcluindoId(excluindoId === ordem.id ? null : ordem.id)}
+                    aria-label="Apagar ordem de serviço"
+                    className="p-1.5 rounded-lg border border-slate-200 bg-white hover:border-rose-500 hover:bg-rose-50 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                  </button>
+                </div>
               </div>
+
+              {excluindoId === ordem.id && (
+                <div className="bg-white border border-rose-200 rounded-lg p-2.5 flex items-center justify-between gap-2 flex-wrap">
+                  <p className="text-[11px] font-bold uppercase text-rose-700">
+                    Apagar esta ordem de serviço?
+                  </p>
+                  <div className="flex gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setExcluindoId(null)}
+                      className="px-2.5 py-1.5 rounded-lg border border-slate-300 text-[11px] font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleExcluir(ordem.id)}
+                      className="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-black uppercase cursor-pointer"
+                    >
+                      Apagar
+                    </button>
+                  </div>
+                </div>
+              )}
+
 
               {reenviandoId === ordem.id && (
                 <div className="bg-white border border-blue-200 rounded-lg p-2.5 space-y-2">
