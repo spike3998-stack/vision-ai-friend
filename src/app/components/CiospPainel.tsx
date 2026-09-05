@@ -13,10 +13,17 @@ import {
   Truck,
   Siren,
   FileText,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import { UsuarioCadastrado, OrdemServico } from '../types';
 import { GRUPAMENTOS } from '../data/grupamentos';
-import { fetchOrdensServidor, criarOrdemServidor, atualizarOrdemServidor } from '../services/api';
+import {
+  fetchOrdensServidor,
+  criarOrdemServidor,
+  atualizarOrdemServidor,
+  excluirOrdemServidor,
+} from '../services/api';
 
 interface CiospPainelProps {
   usuarioAtivo: UsuarioCadastrado | null;
@@ -50,6 +57,8 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [reenviandoId, setReenviandoId] = useState<string | null>(null);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [excluindoId, setExcluindoId] = useState<string | null>(null);
 
   const [grupamento, setGrupamento] = useState<string>('');
   const [endereco, setEndereco] = useState('');
@@ -75,12 +84,48 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
     setDescricao('');
     setObservacoes('');
     setErro(null);
+    setEditandoId(null);
+  };
+
+  const abrirEdicao = (ordem: OrdemServico) => {
+    setEditandoId(ordem.id);
+    setGrupamento(ordem.grupamento);
+    setEndereco(ordem.endereco);
+    setDescricao(ordem.descricao);
+    setObservacoes(ordem.observacoes || '');
+    setErro(null);
+    setModalAberto(true);
+  };
+
+  const handleExcluir = async (id: string) => {
+    const ok = await excluirOrdemServidor(id);
+    setExcluindoId(null);
+    if (ok) setOrdens((prev) => prev.filter((o) => o.id !== id));
   };
 
   const handleEnviar = async () => {
     if (!formularioValido) return;
     setEnviando(true);
     setErro(null);
+
+    if (editandoId) {
+      const atualizada = await atualizarOrdemServidor(editandoId, {
+        grupamento,
+        endereco: endereco.trim(),
+        descricao: descricao.trim(),
+        observacoes: observacoes.trim(),
+      });
+      setEnviando(false);
+      if (!atualizada) {
+        setErro('Não foi possível salvar as alterações. Tente novamente.');
+        return;
+      }
+      setOrdens((prev) => prev.map((o) => (o.id === atualizada.id ? atualizada : o)));
+      limparFormulario();
+      setModalAberto(false);
+      return;
+    }
+
     const nova = await criarOrdemServidor({
       grupamento,
       endereco: endereco.trim(),
@@ -147,7 +192,10 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
           <button
             id="btn-enviar-ordem-servico"
             type="button"
-            onClick={() => setModalAberto(true)}
+            onClick={() => {
+              limparFormulario();
+              setModalAberto(true);
+            }}
             className="self-start sm:self-center px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-black uppercase tracking-wider text-white flex items-center gap-2 cursor-pointer transition-colors shadow-md"
           >
             <Send className="w-4 h-4" />
@@ -211,8 +259,51 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
                     </button>
                   )}
                 </div>
-                <span className="text-[11px] text-slate-500 font-medium">{ordem.dataHora}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-slate-500 font-medium">{ordem.dataHora}</span>
+                  <button
+                    type="button"
+                    onClick={() => abrirEdicao(ordem)}
+                    aria-label="Editar ordem de serviço"
+                    className="p-1.5 rounded-lg border border-slate-200 bg-white hover:border-blue-500 hover:bg-blue-50 cursor-pointer"
+                  >
+                    <Pencil className="w-3.5 h-3.5 text-slate-600" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setExcluindoId(excluindoId === ordem.id ? null : ordem.id)}
+                    aria-label="Apagar ordem de serviço"
+                    className="p-1.5 rounded-lg border border-slate-200 bg-white hover:border-rose-500 hover:bg-rose-50 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                  </button>
+                </div>
               </div>
+
+              {excluindoId === ordem.id && (
+                <div className="bg-white border border-rose-200 rounded-lg p-2.5 flex items-center justify-between gap-2 flex-wrap">
+                  <p className="text-[11px] font-bold uppercase text-rose-700">
+                    Apagar esta ordem de serviço?
+                  </p>
+                  <div className="flex gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setExcluindoId(null)}
+                      className="px-2.5 py-1.5 rounded-lg border border-slate-300 text-[11px] font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleExcluir(ordem.id)}
+                      className="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-black uppercase cursor-pointer"
+                    >
+                      Apagar
+                    </button>
+                  </div>
+                </div>
+              )}
+
 
               {reenviandoId === ordem.id && (
                 <div className="bg-white border border-blue-200 rounded-lg p-2.5 space-y-2">
@@ -327,11 +418,14 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
             <div className="flex items-center justify-between p-4 border-b border-slate-200 sticky top-0 bg-white rounded-t-2xl">
               <h3 className="text-sm font-black uppercase text-slate-900 flex items-center gap-2">
                 <Send className="w-4 h-4 text-blue-600" />
-                <span>Nova Ordem de Serviço</span>
+                <span>{editandoId ? 'Editar Ordem de Serviço' : 'Nova Ordem de Serviço'}</span>
               </h3>
               <button
                 type="button"
-                onClick={() => setModalAberto(false)}
+                onClick={() => {
+                  setModalAberto(false);
+                  limparFormulario();
+                }}
                 className="p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer"
               >
                 <X className="w-4 h-4 text-slate-500" />
@@ -410,7 +504,13 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
                 className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
               >
                 <Send className="w-4 h-4" />
-                <span>{enviando ? 'ENVIANDO...' : 'ENVIAR PARA O GRUPAMENTO'}</span>
+                <span>
+                  {enviando
+                    ? 'SALVANDO...'
+                    : editandoId
+                      ? 'SALVAR ALTERAÇÕES'
+                      : 'ENVIAR PARA O GRUPAMENTO'}
+                </span>
               </button>
             </div>
           </div>

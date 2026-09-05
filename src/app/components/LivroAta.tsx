@@ -9,6 +9,7 @@ import {
   Truck,
   CalendarDays,
   RefreshCw,
+  Radio,
 } from 'lucide-react';
 
 import { ChecklistViatura, OrdemServico, UsuarioCadastrado } from '../types';
@@ -71,15 +72,19 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [livroAberto]);
 
-  const podeAbrir = (sigla: string) => ehDesenvolvedor || usuarioAtivo?.grupamento === sigla;
+  const podeAbrir = (sigla: string) =>
+    sigla === 'CIOSP' || ehDesenvolvedor || usuarioAtivo?.grupamento === sigla;
+
+  const ehLivroCiosp = livroAberto === 'CIOSP';
 
   const ordensDoLivro = useMemo(
-    () => ordens.filter((o) => o.grupamento === livroAberto),
-    [ordens, livroAberto],
+    () => (ehLivroCiosp ? ordens : ordens.filter((o) => o.grupamento === livroAberto)),
+    [ordens, livroAberto, ehLivroCiosp],
   );
   const checklistsDoLivro = useMemo(
-    () => checklists.filter((c) => c.motoristaGrupamento === livroAberto),
-    [checklists, livroAberto],
+    () =>
+      ehLivroCiosp ? [] : checklists.filter((c) => c.motoristaGrupamento === livroAberto),
+    [checklists, livroAberto, ehLivroCiosp],
   );
 
   const diasComRegistro = useMemo(() => {
@@ -109,6 +114,27 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
         </div>
 
         <div className="grid gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setAvisoBloqueio(null);
+              setDiaSelecionado(null);
+              setLivroAberto('CIOSP');
+            }}
+            className="w-full flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-white hover:border-slate-900 hover:bg-slate-50 text-left transition cursor-pointer"
+          >
+            <span className="w-11 h-11 rounded-lg bg-blue-950 border border-blue-800 flex items-center justify-center shrink-0">
+              <Radio className="w-5 h-5 text-blue-400" />
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-black text-slate-900 uppercase">Livro Ata CIOSP</p>
+              <p className="text-[11px] text-slate-500 truncate">
+                Posto de serviço CIOSP — todas as ordens emitidas
+              </p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-slate-400" />
+          </button>
+
           {GRUPAMENTOS.map((g) => {
             const liberado = podeAbrir(g.sigla);
             return (
@@ -326,6 +352,11 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
                       {o.status}
                     </span>
                   </div>
+                  {ehLivroCiosp && (
+                    <span className="inline-block text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-slate-900 text-white">
+                      {o.grupamento}
+                    </span>
+                  )}
                   <p className="text-[11px] text-slate-600">{o.endereco}</p>
                   <p className="text-[10px] text-slate-400">
                     {o.dataHora} • Emitida por {o.criadoPor}
