@@ -18,7 +18,12 @@ import {
 } from 'lucide-react';
 import { UsuarioCadastrado, OrdemServico } from '../types';
 import { GRUPAMENTOS } from '../data/grupamentos';
-import { fetchOrdensServidor, criarOrdemServidor, atualizarOrdemServidor } from '../services/api';
+import {
+  fetchOrdensServidor,
+  criarOrdemServidor,
+  atualizarOrdemServidor,
+  excluirOrdemServidor,
+} from '../services/api';
 
 interface CiospPainelProps {
   usuarioAtivo: UsuarioCadastrado | null;
