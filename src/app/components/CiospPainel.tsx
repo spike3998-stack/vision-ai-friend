@@ -501,7 +501,13 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
                 className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
               >
                 <Send className="w-4 h-4" />
-                <span>{enviando ? 'ENVIANDO...' : 'ENVIAR PARA O GRUPAMENTO'}</span>
+                <span>
+                  {enviando
+                    ? 'SALVANDO...'
+                    : editandoId
+                      ? 'SALVAR ALTERAÇÕES'
+                      : 'ENVIAR PARA O GRUPAMENTO'}
+                </span>
               </button>
             </div>
           </div>
