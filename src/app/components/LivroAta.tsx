@@ -9,6 +9,7 @@ import {
   Truck,
   CalendarDays,
   RefreshCw,
+  Radio,
 } from 'lucide-react';
 
 import { ChecklistViatura, OrdemServico, UsuarioCadastrado } from '../types';
