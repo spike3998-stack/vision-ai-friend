@@ -72,15 +72,19 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [livroAberto]);
 
-  const podeAbrir = (sigla: string) => ehDesenvolvedor || usuarioAtivo?.grupamento === sigla;
+  const podeAbrir = (sigla: string) =>
+    sigla === 'CIOSP' || ehDesenvolvedor || usuarioAtivo?.grupamento === sigla;
+
+  const ehLivroCiosp = livroAberto === 'CIOSP';
 
   const ordensDoLivro = useMemo(
-    () => ordens.filter((o) => o.grupamento === livroAberto),
-    [ordens, livroAberto],
+    () => (ehLivroCiosp ? ordens : ordens.filter((o) => o.grupamento === livroAberto)),
+    [ordens, livroAberto, ehLivroCiosp],
   );
   const checklistsDoLivro = useMemo(
-    () => checklists.filter((c) => c.motoristaGrupamento === livroAberto),
-    [checklists, livroAberto],
+    () =>
+      ehLivroCiosp ? [] : checklists.filter((c) => c.motoristaGrupamento === livroAberto),
+    [checklists, livroAberto, ehLivroCiosp],
   );
 
   const diasComRegistro = useMemo(() => {
