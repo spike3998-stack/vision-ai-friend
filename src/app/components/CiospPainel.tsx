@@ -13,6 +13,8 @@ import {
   Truck,
   Siren,
   FileText,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import { UsuarioCadastrado, OrdemServico } from '../types';
 import { GRUPAMENTOS } from '../data/grupamentos';
