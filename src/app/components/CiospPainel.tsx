@@ -415,11 +415,14 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
             <div className="flex items-center justify-between p-4 border-b border-slate-200 sticky top-0 bg-white rounded-t-2xl">
               <h3 className="text-sm font-black uppercase text-slate-900 flex items-center gap-2">
                 <Send className="w-4 h-4 text-blue-600" />
-                <span>Nova Ordem de Serviço</span>
+                <span>{editandoId ? 'Editar Ordem de Serviço' : 'Nova Ordem de Serviço'}</span>
               </h3>
               <button
                 type="button"
-                onClick={() => setModalAberto(false)}
+                onClick={() => {
+                  setModalAberto(false);
+                  limparFormulario();
+                }}
                 className="p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer"
               >
                 <X className="w-4 h-4 text-slate-500" />
