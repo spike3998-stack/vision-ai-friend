@@ -352,6 +352,11 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
                       {o.status}
                     </span>
                   </div>
+                  {ehLivroCiosp && (
+                    <span className="inline-block text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-slate-900 text-white">
+                      {o.grupamento}
+                    </span>
+                  )}
                   <p className="text-[11px] text-slate-600">{o.endereco}</p>
                   <p className="text-[10px] text-slate-400">
                     {o.dataHora} • Emitida por {o.criadoPor}
