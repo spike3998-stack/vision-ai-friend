@@ -84,12 +84,48 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
     setDescricao('');
     setObservacoes('');
     setErro(null);
+    setEditandoId(null);
+  };
+
+  const abrirEdicao = (ordem: OrdemServico) => {
+    setEditandoId(ordem.id);
+    setGrupamento(ordem.grupamento);
+    setEndereco(ordem.endereco);
+    setDescricao(ordem.descricao);
+    setObservacoes(ordem.observacoes || '');
+    setErro(null);
+    setModalAberto(true);
+  };
+
+  const handleExcluir = async (id: string) => {
+    const ok = await excluirOrdemServidor(id);
+    setExcluindoId(null);
+    if (ok) setOrdens((prev) => prev.filter((o) => o.id !== id));
   };
 
   const handleEnviar = async () => {
     if (!formularioValido) return;
     setEnviando(true);
     setErro(null);
+
+    if (editandoId) {
+      const atualizada = await atualizarOrdemServidor(editandoId, {
+        grupamento,
+        endereco: endereco.trim(),
+        descricao: descricao.trim(),
+        observacoes: observacoes.trim(),
+      });
+      setEnviando(false);
+      if (!atualizada) {
+        setErro('Não foi possível salvar as alterações. Tente novamente.');
+        return;
+      }
+      setOrdens((prev) => prev.map((o) => (o.id === atualizada.id ? atualizada : o)));
+      limparFormulario();
+      setModalAberto(false);
+      return;
+    }
+
     const nova = await criarOrdemServidor({
       grupamento,
       endereco: endereco.trim(),
