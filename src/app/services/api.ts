@@ -199,3 +199,8 @@ export async function atualizarOrdemServidor(
   const data = await chamar<any>({ acao: 'ordens.atualizar', id, dados });
   return data?.ordem ?? null;
 }
+
+export async function excluirOrdemServidor(id: string): Promise<boolean> {
+  const data = await chamar<any>({ acao: 'ordens.excluir', id });
+  return Boolean(data?.success ?? data);
+}
