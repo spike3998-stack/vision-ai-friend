@@ -57,6 +57,8 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [reenviandoId, setReenviandoId] = useState<string | null>(null);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [excluindoId, setExcluindoId] = useState<string | null>(null);
 
   const [grupamento, setGrupamento] = useState<string>('');
   const [endereco, setEndereco] = useState('');
