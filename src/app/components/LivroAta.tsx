@@ -114,6 +114,27 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
         </div>
 
         <div className="grid gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setAvisoBloqueio(null);
+              setDiaSelecionado(null);
+              setLivroAberto('CIOSP');
+            }}
+            className="w-full flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-white hover:border-slate-900 hover:bg-slate-50 text-left transition cursor-pointer"
+          >
+            <span className="w-11 h-11 rounded-lg bg-blue-950 border border-blue-800 flex items-center justify-center shrink-0">
+              <Radio className="w-5 h-5 text-blue-400" />
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-black text-slate-900 uppercase">Livro Ata CIOSP</p>
+              <p className="text-[11px] text-slate-500 truncate">
+                Posto de serviço CIOSP — todas as ordens emitidas
+              </p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-slate-400" />
+          </button>
+
           {GRUPAMENTOS.map((g) => {
             const liberado = podeAbrir(g.sigla);
             return (
