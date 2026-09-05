@@ -192,7 +192,10 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
           <button
             id="btn-enviar-ordem-servico"
             type="button"
-            onClick={() => setModalAberto(true)}
+            onClick={() => {
+              limparFormulario();
+              setModalAberto(true);
+            }}
             className="self-start sm:self-center px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-black uppercase tracking-wider text-white flex items-center gap-2 cursor-pointer transition-colors shadow-md"
           >
             <Send className="w-4 h-4" />
