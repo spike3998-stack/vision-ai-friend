@@ -331,6 +331,24 @@ async function handle(body: any) {
         dataHora: o.dataHora || agora(),
       };
       await db.from("gm_ordens").upsert({ id, dados: ordem }, { onConflict: "id" });
+
+      // Notifica ocupantes do grupamento destino
+      try {
+        const mapa = await mapaPostos(db);
+        const ocupantes = (mapa[o.grupamento as string] ?? []) as any[];
+        const matriculas = ocupantes.map((oc) => String(oc.matricula ?? "")).filter(Boolean);
+        if (matriculas.length > 0) {
+          await enviarPush(
+            await tokensPorMatriculas(db, matriculas),
+            `Nova ordem de serviço • ${o.grupamento}`,
+            `${o.descricao} – ${o.endereco}`,
+            { ordemId: id, tipo: "nova_ordem" }
+          );
+        }
+      } catch (err) {
+        console.warn("[Notificação] falha ao notificar grupamento:", err);
+      }
+
       return json({ success: true, ordem });
     }
 
@@ -342,8 +360,29 @@ async function handle(body: any) {
         .eq("id", id)
         .maybeSingle();
       if (!existente) return json({ error: "Ordem não encontrada." }, 404);
-      const ordem = { ...((existente.dados as any) ?? {}), ...(body.dados ?? {}), id };
+      const anterior = (existente.dados as any) ?? {};
+      const ordem = { ...anterior, ...(body.dados ?? {}), id };
       await db.from("gm_ordens").update({ dados: ordem }).eq("id", id);
+
+      // Notifica CIOSP quando reboque é acionado
+      if (body.dados?.reboqueAcionado && !anterior.reboqueAcionado) {
+        try {
+          const mapa = await mapaPostos(db);
+          const ocupantes = (mapa["CIOSP"] ?? []) as any[];
+          const matriculas = ocupantes.map((oc) => String(oc.matricula ?? "")).filter(Boolean);
+          if (matriculas.length > 0) {
+            await enviarPush(
+              await tokensPorMatriculas(db, matriculas),
+              "Reboque acionado",
+              `${ordem.descricao} – ${ordem.endereco}`,
+              { ordemId: id, tipo: "reboque" }
+            );
+          }
+        } catch (err) {
+          console.warn("[Notificação] falha ao notificar CIOSP:", err);
+        }
+      }
+
       return json({ success: true, ordem });
     }
 
