@@ -27,6 +27,7 @@ import { MotoristaLocalizacao } from './components/MotoristaLocalizacao';
 import { CiospPainel } from './components/CiospPainel';
 import { EquipePainel } from './components/EquipePainel';
 import { LivroAta } from './components/LivroAta';
+import { PadAssinatura } from './components/PadAssinatura';
 
 
 export default function App() {
@@ -125,6 +126,8 @@ export default function App() {
   const cadFileInputRef = useRef<HTMLInputElement | null>(null);
   const [cadSenha, setCadSenha] = useState('');
   const [cadSuccessMsg, setCadSuccessMsg] = useState<string | null>(null);
+  const [cadAssinatura, setCadAssinatura] = useState<string | null>(null);
+  const [viaturaAtivaPrefixo, setViaturaAtivaPrefixo] = useState<string | null>(null);
 
   // Estado para Edição do Próprio Perfil
   const [modalEditarPerfilAberto, setModalEditarPerfilAberto] = useState(false);
@@ -256,6 +259,11 @@ export default function App() {
       return;
     }
 
+    // Última etapa do cadastro: coleta da assinatura do agente
+    setCurrentScreen('assinatura');
+  };
+
+  const finalizarCadastroComAssinatura = async (assinatura: string) => {
     const mat = cadMatricula.trim();
     const isDev = mat === MATRICULA_DESENVOLVEDOR;
 
@@ -267,6 +275,7 @@ export default function App() {
       tipoSanguineo: cadTipoSanguineo.trim().toUpperCase(),
       grupamento: cadGrupamento,
       foto: cadFoto,
+      assinatura,
       senha: cadSenha,
       status: isDev ? 'autorizado' : 'pendente',
       isDesenvolvedor: isDev,
@@ -293,6 +302,7 @@ export default function App() {
 
     setLoginIdentificador(mat);
     setPassword('');
+    setCadAssinatura(null);
     setCurrentScreen('login');
   };
 
@@ -384,13 +394,40 @@ export default function App() {
   const equipeDaViatura: MembroEquipe[] = POSTOS_EMBARCADOS.flatMap((posto) =>
     (ocupacaoPostos[posto] || [])
       .filter((oc) => !usuarioAtivo?.grupamento || !oc.grupamento || oc.grupamento === usuarioAtivo.grupamento || oc.grupamento === 'Desenvolvedor')
-      .map((oc) => ({
-        nomeDeGuerra: oc.nomeDeGuerra,
-        matricula: oc.matricula,
-        posto,
-        grupamento: oc.grupamento,
-      }))
+      // Reconhecimento da VTR: só entra na equipe quem está na MESMA viatura
+      .filter((oc) => !viaturaAtivaPrefixo || oc.viaturaPrefixo === viaturaAtivaPrefixo)
+      .map((oc) => {
+        const cadastro = usuarios.find((u) => u.matricula === oc.matricula);
+        const membro: MembroEquipe = {
+          nomeDeGuerra: oc.nomeDeGuerra,
+          matricula: oc.matricula,
+          posto,
+          grupamento: oc.grupamento,
+        };
+        if (cadastro?.assinatura) membro.assinatura = cadastro.assinatura;
+        if (oc.viaturaPrefixo) membro.viaturaPrefixo = oc.viaturaPrefixo;
+        return membro;
+      })
   );
+
+  /** Registra no posto de serviço qual viatura o agente assumiu (reconhecimento de VTR). */
+  const handleDefinirViatura = (prefixo: string | null) => {
+    setViaturaAtivaPrefixo(prefixo);
+    if (!usuarioAtivo || !funcaoSelecionada) return;
+    const novoMapa: MapaOcupacaoPostos = { ...ocupacaoPostos };
+    let ocupanteAtualizado: OcupantePosto | null = null;
+    novoMapa[funcaoSelecionada] = (novoMapa[funcaoSelecionada] || []).map((o) => {
+      if (o.matricula !== usuarioAtivo.matricula) return o;
+      const atualizado: OcupantePosto = { ...o };
+      if (prefixo) atualizado.viaturaPrefixo = prefixo;
+      else delete atualizado.viaturaPrefixo;
+      ocupanteAtualizado = atualizado;
+      return atualizado;
+    });
+    setOcupacaoPostos(novoMapa);
+    salvarOcupacaoPostos(novoMapa);
+    if (ocupanteAtualizado) ocuparPostoServidor(funcaoSelecionada, ocupanteAtualizado);
+  };
 
   const handleDesocuparPosto = () => {
     if (!usuarioAtivo) return;
@@ -1468,6 +1505,7 @@ export default function App() {
               ocupantesPosto={ocupacaoPostos['MOTORISTA'] || []}
               viaturas={viaturas}
               equipe={equipeDaViatura}
+              onViaturaSelecionada={handleDefinirViatura}
               onTrocarPosto={() => setCurrentScreen('posto-servico')}
               onDesocuparPosto={handleDesocuparPosto}
               onVoltarMenu={() => setCurrentScreen('menu')}
@@ -1483,6 +1521,9 @@ export default function App() {
               posto={funcaoSelecionada || 'OPERACIONAL'}
               ocupantesPosto={ocupacaoPostos[funcaoSelecionada || 'OPERACIONAL'] || []}
               equipe={equipeDaViatura}
+              viaturas={viaturas}
+              viaturaPrefixo={viaturaAtivaPrefixo || undefined}
+              onViaturaSelecionada={handleDefinirViatura}
               onTrocarPosto={() => setCurrentScreen('posto-servico')}
               onDesocuparPosto={handleDesocuparPosto}
               onVoltarMenu={() => setCurrentScreen('menu')}
