@@ -144,12 +144,21 @@ export const OrdensRecebidas: React.FC<OrdensRecebidasProps> = ({
     setOrdemBoletim(final);
   };
 
-  const recusarNoLocal = async (ordem: OrdemServico) => {
+  const recusarNoLocal = async (ordem: OrdemServico, motivo: string) => {
     await atualizarOrdemServidor(ordem.id, {
       status: 'recusada',
       ocorrenciaStatus: 'recusada_no_local',
       respondidoPor: usuarioAtivo?.nomeDeGuerra || posto,
       respondidoPorMatricula: usuarioAtivo?.matricula || '---',
+      motivoRecusa: motivo,
+      motivoRegistradoPor: usuarioAtivo?.nomeDeGuerra || posto,
+      motivoRegistradoEm: new Date().toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
     });
     setOrdemChegada(null);
     setOrdens((prev) => prev.filter((o) => o.id !== ordem.id));
