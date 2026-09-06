@@ -355,7 +355,10 @@ export default function App() {
     // Se o usuário ativo já está registrado nesse posto, permite acesso
     const jaEstaNoPosto = usuarioAtivo && ocupantesAtuais.some((o) => o.matricula === usuarioAtivo.matricula);
 
-    if (limite !== undefined && ocupantesAtuais.length >= limite && !jaEstaNoPosto) {
+    // A Inspetoria entra em qualquer posto, mesmo cheio, para consultar quem está ali
+    const ehInspetoria = usuarioAtivo?.grupamento === 'INSPETORIA';
+
+    if (limite !== undefined && ocupantesAtuais.length >= limite && !jaEstaNoPosto && !ehInspetoria) {
       setAlertaPostoCoberto({
         posto: funcao,
         limite,
@@ -620,6 +623,28 @@ export default function App() {
 
           {usuarioAtivo && currentScreen !== 'login' && (
             <BannerNotificacoes matricula={usuarioAtivo.matricula} />
+          )}
+
+          {usuarioAtivo && currentScreen !== 'login' && currentScreen !== 'cadastrar' && currentScreen !== 'assinatura' && (
+            <div className="flex justify-end mb-3">
+              <button
+                type="button"
+                onClick={() => setChatAberto(true)}
+                className="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-sm"
+                title="Rádio de comunicação"
+              >
+                <Radio className="w-4 h-4 text-blue-400" />
+                <span>Rádio</span>
+              </button>
+            </div>
+          )}
+
+          {usuarioAtivo && chatAberto && (
+            <ChatRadio
+              usuarioAtivo={usuarioAtivo}
+              usuarios={usuarios}
+              onFechar={() => setChatAberto(false)}
+            />
           )}
 
 
