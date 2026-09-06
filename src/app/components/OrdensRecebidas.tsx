@@ -85,7 +85,8 @@ export const OrdensRecebidas: React.FC<OrdensRecebidasProps> = ({
   const responderOrdem = async (
     ordem: OrdemServico,
     status: 'aceita' | 'recusada' | 'espera',
-    minutos?: number
+    minutos?: number,
+    motivo?: string
   ) => {
     const dados: Partial<OrdemServico> = {
       status,
@@ -95,6 +96,18 @@ export const OrdensRecebidas: React.FC<OrdensRecebidasProps> = ({
     if (status === 'espera' && minutos) {
       dados.esperaMinutos = minutos;
       dados.esperaAte = Date.now() + minutos * 60_000;
+    }
+    if (motivo) {
+      if (status === 'recusada') dados.motivoRecusa = motivo;
+      if (status === 'espera') dados.motivoEspera = motivo;
+      dados.motivoRegistradoPor = usuarioAtivo?.nomeDeGuerra || posto;
+      dados.motivoRegistradoEm = new Date().toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
     }
     if (status === 'aceita') {
       dados.equipe = equipe;
