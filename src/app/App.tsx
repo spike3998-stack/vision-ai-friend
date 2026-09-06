@@ -208,6 +208,7 @@ export default function App() {
     if (usuarioEncontrado.matricula === MATRICULA_DESENVOLVEDOR || usuarioEncontrado.isDesenvolvedor) {
       setUsuarioAtivo(usuarioEncontrado);
       setCurrentScreen('dev-menu');
+      registrarPush(usuarioEncontrado.matricula);
       return;
     }
 
