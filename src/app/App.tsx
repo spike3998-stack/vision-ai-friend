@@ -225,6 +225,7 @@ export default function App() {
     // Acesso liberado para usuário regular autorizado
     setUsuarioAtivo(usuarioEncontrado);
     setCurrentScreen('menu');
+    registrarPush(usuarioEncontrado.matricula);
   };
 
   const matriculaDuplicada =
