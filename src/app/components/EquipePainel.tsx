@@ -35,7 +35,9 @@ export const EquipePainel: React.FC<EquipePainelProps> = ({
   const grupamento = GRUPAMENTOS.find((g) => g.sigla === usuarioAtivo?.grupamento);
   const listaViaturas = viaturas && viaturas.length > 0 ? viaturas : getViaturasArmazenadas();
   const [modalViaturas, setModalViaturas] = useState(false);
+  const [modalPatrulhamento, setModalPatrulhamento] = useState(false);
   const [busca, setBusca] = useState('');
+
   const [prefixoAtivo, setPrefixoAtivo] = useState<string | null>(() => {
     if (viaturaPrefixo) return viaturaPrefixo;
     try {
