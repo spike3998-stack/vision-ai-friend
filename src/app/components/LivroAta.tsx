@@ -13,16 +13,26 @@ import {
   Download,
   X,
   FileText,
+  Trash2,
 } from 'lucide-react';
 
 import { ChecklistViatura, OrdemServico, UsuarioCadastrado } from '../types';
 import { GRUPAMENTOS, MATRICULA_DESENVOLVEDOR } from '../data/grupamentos';
-import { fetchOrdensServidor, fetchChecklistsServidor } from '../services/api';
+import {
+  fetchOrdensServidor,
+  fetchChecklistsServidor,
+  excluirOrdemServidor,
+  excluirChecklistServidor,
+} from '../services/api';
 import { gerarLivroAtaPdf } from '../services/livroAtaPdf';
 
 interface LivroAtaProps {
   usuarioAtivo: UsuarioCadastrado | null;
   onVoltar: () => void;
+  /** Posto de serviço ocupado agora pelo agente (null = fora de serviço). */
+  postoAtual?: string | null | undefined;
+  /** Momento (epoch ms) em que o agente assumiu o posto. */
+  inicioPlantao?: number | null | undefined;
 }
 
 const MESES = [
@@ -44,7 +54,12 @@ function chaveDia(d: Date): string {
   return `${dia}/${mes}/${d.getFullYear()}`;
 }
 
-export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
+export function LivroAta({
+  usuarioAtivo,
+  onVoltar,
+  postoAtual = null,
+  inicioPlantao = null,
+}: LivroAtaProps) {
   const ehDesenvolvedor =
     usuarioAtivo?.isDesenvolvedor || usuarioAtivo?.matricula === MATRICULA_DESENVOLVEDOR;
 
@@ -78,11 +93,38 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [livroAberto]);
 
-  const podeAbrir = (sigla: string) =>
-    sigla === 'CIOSP' ||
-    ehDesenvolvedor ||
-    usuarioAtivo?.grupamento === 'INSPETORIA' ||
-    usuarioAtivo?.grupamento === sigla;
+  const emServico = Boolean(postoAtual);
+
+  /** Dias que o agente comum pode consultar: apenas o dia do plantão em andamento. */
+  const diasPermitidos = useMemo(() => {
+    const dias = new Set<string>();
+    dias.add(chaveDia(new Date()));
+    if (inicioPlantao) dias.add(chaveDia(new Date(inicioPlantao)));
+    return dias;
+  }, [inicioPlantao]);
+
+  const podeAbrir = (sigla: string) => {
+    if (ehDesenvolvedor) return true;
+    if (!emServico) return false;
+    if (sigla === 'CIOSP') return postoAtual === 'CIOSP';
+    return usuarioAtivo?.grupamento === sigla;
+  };
+
+  const podeAbrirDia = (chave: string) => ehDesenvolvedor || diasPermitidos.has(chave);
+
+  const excluirOrdem = async (id: string) => {
+    if (!ehDesenvolvedor) return;
+    if (!window.confirm('Apagar definitivamente este registro do livro?')) return;
+    const ok = await excluirOrdemServidor(id);
+    if (ok) setOrdens((prev) => prev.filter((o) => o.id !== id));
+  };
+
+  const excluirChecklist = async (id: string) => {
+    if (!ehDesenvolvedor) return;
+    if (!window.confirm('Apagar definitivamente este check-list do livro?')) return;
+    const ok = await excluirChecklistServidor(id);
+    if (ok) setChecklists((prev) => prev.filter((c) => c.id !== id));
+  };
 
   const ehLivroCiosp = livroAberto === 'CIOSP';
 
@@ -112,6 +154,12 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
   );
 
   const selecionarDia = (chave: string) => {
+    if (!podeAbrirDia(chave)) {
+      setAvisoBloqueio(
+        'Você só pode consultar o livro do dia do seu plantão. Datas anteriores ficam restritas ao administrador.',
+      );
+      return;
+    }
     setDiaSelecionado(chave);
     setModalDownload(true);
   };
@@ -153,6 +201,14 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
           <button
             type="button"
             onClick={() => {
+              if (!podeAbrir('CIOSP')) {
+                setAvisoBloqueio(
+                  emServico
+                    ? 'O Livro Ata CIOSP só pode ser consultado por quem está no posto CIOSP.'
+                    : 'Assuma um posto de serviço para consultar o Livro Ata.',
+                );
+                return;
+              }
               setAvisoBloqueio(null);
               setDiaSelecionado(null);
               setLivroAberto('CIOSP');
@@ -168,7 +224,11 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
                 Posto de serviço CIOSP — apenas ordens emitidas pela CIOSP
               </p>
             </div>
-            <ChevronRight className="w-5 h-5 text-slate-400" />
+            {podeAbrir('CIOSP') ? (
+              <ChevronRight className="w-5 h-5 text-slate-400" />
+            ) : (
+              <Lock className="w-4 h-4 text-slate-400" />
+            )}
           </button>
 
           {GRUPAMENTOS.map((g) => {
@@ -179,7 +239,11 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
                 type="button"
                 onClick={() => {
                   if (!liberado) {
-                    setAvisoBloqueio(g.sigla);
+                    setAvisoBloqueio(
+                      emServico
+                        ? `O Livro Ata ${g.sigla} só pode ser consultado por agentes do grupamento ${g.sigla}.`
+                        : 'Assuma um posto de serviço para consultar o Livro Ata do seu grupamento.',
+                    );
                     return;
                   }
                   setAvisoBloqueio(null);
@@ -216,10 +280,7 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
         {avisoBloqueio && (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-center">
             <p className="text-xs font-bold text-rose-700 uppercase">Acesso restrito</p>
-            <p className="text-[11px] text-rose-600 mt-1">
-              O Livro Ata {avisoBloqueio} só pode ser consultado por agentes do grupamento{' '}
-              {avisoBloqueio}.
-            </p>
+            <p className="text-[11px] text-rose-600 mt-1">{avisoBloqueio}</p>
           </div>
         )}
 
@@ -311,6 +372,7 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
               const chave = chaveDia(data);
               const temRegistro = diasComRegistro.has(chave);
               const ativo = diaSelecionado === chave;
+              const liberadoDia = podeAbrirDia(chave);
               return (
                 <button
                   key={chave}
@@ -319,9 +381,11 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
                   className={`relative aspect-square rounded-lg text-xs font-bold cursor-pointer transition ${
                     ativo
                       ? 'bg-slate-900 text-white'
-                      : temRegistro
-                        ? 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-                        : 'text-slate-600 hover:bg-slate-100'
+                      : !liberadoDia
+                        ? 'text-slate-300'
+                        : temRegistro
+                          ? 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                          : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
                   {data.getDate()}
@@ -384,8 +448,20 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
                     <p className="text-xs font-black text-slate-800 uppercase truncate">
                       {o.descricao}
                     </p>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase shrink-0">
-                      {o.ocorrenciaStatus === 'finalizada' ? 'encerrada' : o.status}
+                    <span className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">
+                        {o.ocorrenciaStatus === 'finalizada' ? 'encerrada' : o.status}
+                      </span>
+                      {ehDesenvolvedor && (
+                        <button
+                          type="button"
+                          onClick={() => void excluirOrdem(o.id)}
+                          className="p-1 rounded-md text-rose-500 hover:bg-rose-50 cursor-pointer"
+                          aria-label="Apagar registro"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </span>
                   </div>
                   {o.ocorrenciaStatus === 'finalizada' && (
@@ -418,8 +494,9 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
                   {o.motivoRecusa && (
                     <div className="text-[11px] text-rose-800 bg-rose-50 border border-rose-200 rounded-lg p-2">
                       <strong className="block text-[10px] font-black uppercase">
-                        Motivo da recusa
-                        {o.ocorrenciaStatus === 'recusada_no_local' ? ' (no local)' : ''}
+                        {o.ocorrenciaStatus === 'recusada_no_local'
+                          ? 'Motivo da finalização no local'
+                          : 'Motivo da recusa'}
                       </strong>
                       <span className="whitespace-pre-wrap">{o.motivoRecusa}</span>
                       {o.motivoRegistradoPor && (
@@ -467,8 +544,20 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
                     <p className="text-xs font-black text-slate-800 uppercase">
                       {c.prefixoViatura} • {c.placaViatura}
                     </p>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase shrink-0">
-                      {c.statusGeral.replace(/_/g, ' ')}
+                    <span className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">
+                        {c.statusGeral.replace(/_/g, ' ')}
+                      </span>
+                      {ehDesenvolvedor && (
+                        <button
+                          type="button"
+                          onClick={() => void excluirChecklist(c.id)}
+                          className="p-1 rounded-md text-rose-500 hover:bg-rose-50 cursor-pointer"
+                          aria-label="Apagar check-list"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-600">

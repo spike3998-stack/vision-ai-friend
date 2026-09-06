@@ -346,6 +346,11 @@ async function handle(body: any) {
       return json({ success: true, checklist });
     }
 
+    case "checklists.excluir": {
+      await db.from("gm_checklists").delete().eq("id", String(body.id));
+      return json({ success: true });
+    }
+
     // ---------------- ORDENS DE SERVIÇO ----------------
     case "ordens.listar": {
       const { data } = await db

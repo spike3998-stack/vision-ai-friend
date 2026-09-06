@@ -391,7 +391,7 @@ export const OrdensRecebidas: React.FC<OrdensRecebidasProps> = ({
                 }}
                 className="w-full py-3 rounded-xl border border-rose-300 hover:bg-rose-50 text-rose-700 font-black text-sm uppercase cursor-pointer"
               >
-                Recusar ocorrência
+                Finalizar ocorrência no local
               </button>
               <button
                 type="button"
@@ -425,7 +425,9 @@ export const OrdensRecebidas: React.FC<OrdensRecebidasProps> = ({
                 <p className="text-sm font-black uppercase text-slate-900">
                   {justificativa.tipo === 'espera'
                     ? `Motivo da espera de ${justificativa.minutos} min`
-                    : 'Motivo da recusa'}
+                    : justificativa.tipo === 'recusada_no_local'
+                      ? 'Motivo da finalização no local'
+                      : 'Motivo da recusa'}
                 </p>
                 <p className="text-[11px] text-slate-500 truncate">
                   {justificativa.ordem.descricao}
@@ -441,7 +443,9 @@ export const OrdensRecebidas: React.FC<OrdensRecebidasProps> = ({
               placeholder={
                 justificativa.tipo === 'espera'
                   ? 'Explique por que a equipe precisa deste tempo de espera.'
-                  : 'Explique o motivo da recusa desta ordem de serviço.'
+                  : justificativa.tipo === 'recusada_no_local'
+                    ? 'Relate brevemente o desfecho no local (evasão, sanada no local, etc.). Fica registrado em Livro.'
+                    : 'Explique o motivo da recusa desta ordem de serviço.'
               }
               className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-blue-500 resize-y"
             />

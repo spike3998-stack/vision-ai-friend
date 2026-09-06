@@ -333,17 +333,25 @@ export const MotoristaLocalizacao: React.FC<MotoristaLocalizacaoProps> = ({
     const map = mapInstanceRef.current;
     if (!map) return;
     try {
-      const consulta = encodeURIComponent(`${ordem.endereco}, Arraial do Cabo, RJ, Brasil`);
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${consulta}`
-      );
-      const achados = (await res.json()) as Array<{ lat: string; lon: string }>;
-      const alvo = achados[0];
-      if (!alvo) {
+      let destino: { lat: number; lng: number } | null = null;
+
+      // Coordenadas exatas escolhidas pelo CIOSP na sugestão de endereço
+      if (typeof ordem.latitude === 'number' && typeof ordem.longitude === 'number') {
+        destino = { lat: ordem.latitude, lng: ordem.longitude };
+      } else {
+        const consulta = encodeURIComponent(`${ordem.endereco}, Arraial do Cabo, RJ, Brasil`);
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${consulta}`
+        );
+        const achados = (await res.json()) as Array<{ lat: string; lon: string }>;
+        const alvo = achados[0];
+        if (alvo) destino = { lat: parseFloat(alvo.lat), lng: parseFloat(alvo.lon) };
+      }
+
+      if (!destino) {
         setRotaErro('Não foi possível localizar o endereço informado pelo CIOSP.');
         return;
       }
-      const destino = { lat: parseFloat(alvo.lat), lng: parseFloat(alvo.lon) };
 
       let pontos: [number, number][] = [
         [position.lat, position.lng],

@@ -16,7 +16,10 @@ import {
   fetchViaturasServidor,
   salvarViaturaServidor,
   excluirViaturaServidor,
+  fetchOrdensServidor,
+  fetchChecklistsServidor,
 } from './services/api';
+import { gerarLivroAtaPdf } from './services/livroAtaPdf';
 import { processarFotoPerfil, lerArquivoParaEdicao } from './services/imageUtils';
 import { enablePush, registrarTokenNoServidor } from './services/notifications';
 import { DevMenu } from './components/DevMenu';
@@ -33,6 +36,9 @@ import { BannerNotificacoes } from './components/BannerNotificacoes';
 import { ChatRadio } from './components/ChatRadio';
 
 
+
+/** Tipos sanguíneos disponíveis no cadastro. */
+const TIPOS_SANGUINEOS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
 export default function App() {
   // Navigation
@@ -149,6 +155,11 @@ export default function App() {
   const [cadSuccessMsg, setCadSuccessMsg] = useState<string | null>(null);
   const [cadAssinatura, setCadAssinatura] = useState<string | null>(null);
   const [viaturaAtivaPrefixo, setViaturaAtivaPrefixo] = useState<string | null>(null);
+
+  // Encerramento de plantão (fechamento do livro) e limite de 24h no posto
+  const [modalEncerrarPlantao, setModalEncerrarPlantao] = useState(false);
+  const [gerandoLivroPlantao, setGerandoLivroPlantao] = useState(false);
+  const [avisoPlantao24h, setAvisoPlantao24h] = useState(false);
 
   // Estado para Edição do Próprio Perfil
   const [modalEditarPerfilAberto, setModalEditarPerfilAberto] = useState(false);
@@ -386,6 +397,7 @@ export default function App() {
         nomeDeGuerra: usuarioAtivo.nomeDeGuerra,
         grupamento: usuarioAtivo.isDesenvolvedor || usuarioAtivo.matricula === MATRICULA_DESENVOLVEDOR ? 'Desenvolvedor' : usuarioAtivo.grupamento,
         dataHora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        inicioEm: Date.now(),
       };
 
       // Se ainda não estava na lista deste posto, adiciona
@@ -456,7 +468,16 @@ export default function App() {
     if (ocupanteAtualizado) ocuparPostoServidor(funcaoSelecionada, ocupanteAtualizado);
   };
 
-  const handleDesocuparPosto = () => {
+  /** Momento em que o agente assumiu o posto atual (limite de plantão: 24 horas). */
+  const inicioPlantao = React.useMemo(() => {
+    if (!usuarioAtivo || !funcaoSelecionada) return null;
+    const oc = (ocupacaoPostos[funcaoSelecionada] || []).find(
+      (o) => o.matricula === usuarioAtivo.matricula
+    );
+    return oc?.inicioEm ?? null;
+  }, [ocupacaoPostos, funcaoSelecionada, usuarioAtivo]);
+
+  const liberarPostoAtual = () => {
     if (!usuarioAtivo) return;
     const funcao = funcaoSelecionada || 'MOTORISTA';
     const novoMapa: MapaOcupacaoPostos = { ...ocupacaoPostos };
@@ -467,7 +488,67 @@ export default function App() {
     salvarOcupacaoPostos(novoMapa);
     desocuparPostoServidor(funcao, usuarioAtivo.matricula);
     setFuncaoSelecionada(null);
+    setViaturaAtivaPrefixo(null);
     setCurrentScreen('posto-servico');
+  };
+
+  const handleDesocuparPosto = () => {
+    if (!usuarioAtivo) return;
+    setModalEncerrarPlantao(true);
+  };
+
+  // Limite de 24 horas no posto de serviço: passou disso, o posto é liberado automaticamente.
+  useEffect(() => {
+    if (!inicioPlantao || !funcaoSelecionada) return;
+    const LIMITE = 24 * 60 * 60 * 1000;
+    const verificar = () => {
+      if (Date.now() - inicioPlantao >= LIMITE) {
+        setAvisoPlantao24h(true);
+        setModalEncerrarPlantao(false);
+        liberarPostoAtual();
+      }
+    };
+    verificar();
+    const t = window.setInterval(verificar, 60000);
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inicioPlantao, funcaoSelecionada]);
+
+  /** Fecha o livro do plantão: gera o PDF do dia com a assinatura do coordenador no final. */
+  const fecharLivroDoPlantao = async () => {
+    if (!usuarioAtivo || gerandoLivroPlantao) return;
+    setGerandoLivroPlantao(true);
+    try {
+      const sigla =
+        funcaoSelecionada === 'CIOSP' ? 'CIOSP' : String(usuarioAtivo.grupamento || 'CENTRAL');
+      const hoje = new Date().toLocaleDateString('pt-BR');
+      const [todasOrdens, todosChecklists] = await Promise.all([
+        fetchOrdensServidor(),
+        fetchChecklistsServidor(),
+      ]);
+      const daData = (valor?: string) => (valor || '').includes(hoje);
+      const ordensDoDia = todasOrdens.filter(
+        (o) =>
+          daData(o.dataHora) &&
+          (sigla === 'CIOSP' ? o.origemCiosp === true : o.grupamento === sigla)
+      );
+      const checklistsDoDia = todosChecklists.filter(
+        (c) => daData(c.dataHora) && c.motoristaGrupamento === sigla
+      );
+      const brasao = GRUPAMENTOS.find((g) => g.sigla === sigla)?.imagem;
+      await gerarLivroAtaPdf({
+        sigla,
+        data: hoje,
+        ordens: ordensDoDia,
+        checklists: checklistsDoDia,
+        usuario: usuarioAtivo,
+        brasaoUrl: brasao,
+      });
+    } finally {
+      setGerandoLivroPlantao(false);
+      setModalEncerrarPlantao(false);
+      liberarPostoAtual();
+    }
   };
 
   const handleLiberarPostoPorNome = (postoNome: string) => {
@@ -990,22 +1071,27 @@ export default function App() {
                   >
                     <span>TIPO SANGUÍNEO:</span>
                     <span className="text-[11px] font-normal text-slate-500 normal-case">
-                      (Preenchimento manual)
+                      (Selecione na lista)
                     </span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-rose-500">
                       <Droplets className="w-4 h-4" />
                     </div>
-                    <input
+                    <select
                       id="input-cad-tipo-sanguineo"
-                      type="text"
                       value={cadTipoSanguineo}
                       onChange={(e) => setCadTipoSanguineo(e.target.value)}
-                      placeholder="Ex: O+, A+, B+, AB-, etc."
-                      className="w-full pl-10 pr-3.5 py-3 border border-slate-300 rounded-xl text-sm sm:text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                      className="w-full pl-10 pr-3.5 py-3 border border-slate-300 rounded-xl text-sm sm:text-base text-slate-900 bg-white appearance-none focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                       required
-                    />
+                    >
+                      <option value="">Selecione o tipo sanguíneo</option>
+                      {TIPOS_SANGUINEOS.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -1695,7 +1781,12 @@ export default function App() {
           {/* ========================================= */}
           {currentScreen === 'livro-ata' && (
             <div id="screen-livro-ata">
-              <LivroAta usuarioAtivo={usuarioAtivo} onVoltar={() => setCurrentScreen('menu')} />
+              <LivroAta
+                usuarioAtivo={usuarioAtivo}
+                onVoltar={() => setCurrentScreen('menu')}
+                postoAtual={funcaoSelecionada}
+                inicioPlantao={inicioPlantao}
+              />
             </div>
           )}
 
@@ -2098,6 +2189,70 @@ export default function App() {
         }}
         onCancelar={() => setImagemParaCortarCadastro(null)}
       />
+
+      {/* MODAL: encerramento de plantão e fechamento do livro */}
+      {modalEncerrarPlantao && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-5 space-y-4">
+            <h3 className="text-base font-black text-slate-900 uppercase">Encerrar plantão</h3>
+            <p className="text-xs text-slate-600">
+              Ao encerrar, o posto fica livre. Você pode fechar o livro do plantão de hoje: o
+              documento é gerado com todos os registros do dia e a assinatura do coordenador de
+              equipe no final.
+            </p>
+            <div className="space-y-2">
+              <button
+                type="button"
+                disabled={gerandoLivroPlantao}
+                onClick={() => void fecharLivroDoPlantao()}
+                className="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm uppercase cursor-pointer disabled:opacity-60"
+              >
+                {gerandoLivroPlantao ? 'Fechando livro...' : 'Fechar livro e encerrar'}
+              </button>
+              <button
+                type="button"
+                disabled={gerandoLivroPlantao}
+                onClick={() => {
+                  setModalEncerrarPlantao(false);
+                  liberarPostoAtual();
+                }}
+                className="w-full py-3 px-4 rounded-xl border border-rose-300 hover:bg-rose-50 text-rose-700 font-bold text-sm uppercase cursor-pointer disabled:opacity-60"
+              >
+                Só liberar o posto
+              </button>
+              <button
+                type="button"
+                disabled={gerandoLivroPlantao}
+                onClick={() => setModalEncerrarPlantao(false)}
+                className="w-full py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm uppercase cursor-pointer"
+              >
+                Voltar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AVISO: plantão de 24 horas encerrado automaticamente */}
+      {avisoPlantao24h && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-5 space-y-4 text-center">
+            <AlertCircle className="w-10 h-10 text-amber-500 mx-auto" />
+            <h3 className="text-base font-black text-slate-900 uppercase">Plantão encerrado</h3>
+            <p className="text-xs text-slate-600">
+              Seu posto de serviço ficou ocupado por 24 horas e foi liberado automaticamente.
+              Assuma o posto novamente para iniciar um novo plantão.
+            </p>
+            <button
+              type="button"
+              onClick={() => setAvisoPlantao24h(false)}
+              className="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm uppercase cursor-pointer"
+            >
+              Entendi
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer id="footer-bottom" className="border-t border-slate-200 bg-white py-3 px-4 text-center text-xs text-slate-500">

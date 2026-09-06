@@ -65,13 +65,22 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
   const [descricao, setDescricao] = useState('');
   const [observacoes, setObservacoes] = useState('');
 
-  // Sugestões de endereço enquanto o CIOSP digita (OpenStreetMap, região de Arraial do Cabo)
-  const [sugestoesEndereco, setSugestoesEndereco] = useState<string[]>([]);
+  // Sugestões de endereço enquanto o CIOSP digita (mapa aberto — ruas, números, comércios e pontos turísticos)
+  interface SugestaoEndereco {
+    titulo: string;
+    detalhe: string;
+    completo: string;
+    lat: number;
+    lon: number;
+  }
+  const [sugestoesEndereco, setSugestoesEndereco] = useState<SugestaoEndereco[]>([]);
   const [buscandoEndereco, setBuscandoEndereco] = useState(false);
+  const [coordenadas, setCoordenadas] = useState<{ lat: number; lon: number } | null>(null);
   const debounceEndereco = React.useRef<number | null>(null);
 
   const buscarSugestoesEndereco = (texto: string) => {
     setEndereco(texto);
+    setCoordenadas(null);
     if (debounceEndereco.current) window.clearTimeout(debounceEndereco.current);
     const consulta = texto.trim();
     if (consulta.length < 3) {
@@ -82,27 +91,44 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
     setBuscandoEndereco(true);
     debounceEndereco.current = window.setTimeout(async () => {
       try {
-        // viewbox limitado a Arraial do Cabo - RJ
-        const viewbox = '-42.10,-22.88,-41.93,-23.04';
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&limit=5&bounded=1&viewbox=${viewbox}&q=${encodeURIComponent(consulta + ', Arraial do Cabo, RJ, Brasil')}`
-        );
-        const achados = (await res.json()) as Array<{ display_name: string }>;
-        const nomes = achados
-          .map((a) => a.display_name.replace(/, Arraial do Cabo.*$/i, ''))
-          .filter((n, i, arr) => n && arr.indexOf(n) === i)
-          .slice(0, 5);
-        setSugestoesEndereco(nomes);
+        // Prioriza a região de Arraial do Cabo, mas não descarta resultados de fora
+        const viewbox = '-42.20,-22.75,-41.80,-23.10';
+        const url =
+          `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=8` +
+          `&countrycodes=br&viewbox=${viewbox}&q=${encodeURIComponent(consulta)}`;
+        const res = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } });
+        const achados = (await res.json()) as Array<{
+          display_name: string;
+          name?: string;
+          lat: string;
+          lon: string;
+        }>;
+        const lista: SugestaoEndereco[] = achados
+          .map((a) => {
+            const partes = a.display_name.split(',').map((p) => p.trim());
+            const titulo = a.name?.trim() || partes.slice(0, 2).join(', ');
+            return {
+              titulo,
+              detalhe: partes.slice(1).join(', '),
+              completo: a.display_name,
+              lat: parseFloat(a.lat),
+              lon: parseFloat(a.lon),
+            };
+          })
+          .filter((s, i, arr) => arr.findIndex((x) => x.completo === s.completo) === i)
+          .slice(0, 6);
+        setSugestoesEndereco(lista);
       } catch {
         setSugestoesEndereco([]);
       } finally {
         setBuscandoEndereco(false);
       }
-    }, 400);
+    }, 350);
   };
 
-  const escolherSugestao = (texto: string) => {
-    setEndereco(texto);
+  const escolherSugestao = (s: SugestaoEndereco) => {
+    setEndereco(s.completo);
+    setCoordenadas({ lat: s.lat, lon: s.lon });
     setSugestoesEndereco([]);
   };
 
@@ -122,6 +148,8 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
   const limparFormulario = () => {
     setGrupamento('');
     setEndereco('');
+    setCoordenadas(null);
+    setSugestoesEndereco([]);
     setDescricao('');
     setObservacoes('');
     setErro(null);
@@ -132,6 +160,11 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
     setEditandoId(ordem.id);
     setGrupamento(ordem.grupamento);
     setEndereco(ordem.endereco);
+    setCoordenadas(
+      typeof ordem.latitude === 'number' && typeof ordem.longitude === 'number'
+        ? { lat: ordem.latitude, lon: ordem.longitude }
+        : null,
+    );
     setDescricao(ordem.descricao);
     setObservacoes(ordem.observacoes || '');
     setErro(null);
@@ -153,6 +186,8 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
       const atualizada = await atualizarOrdemServidor(editandoId, {
         grupamento,
         endereco: endereco.trim(),
+        latitude: coordenadas?.lat,
+        longitude: coordenadas?.lon,
         descricao: descricao.trim(),
         observacoes: observacoes.trim(),
       });
@@ -170,6 +205,8 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
     const nova = await criarOrdemServidor({
       grupamento,
       endereco: endereco.trim(),
+      latitude: coordenadas?.lat,
+      longitude: coordenadas?.lon,
       descricao: descricao.trim(),
       observacoes: observacoes.trim(),
       criadoPor: usuarioAtivo?.nomeDeGuerra || 'CIOSP',
@@ -536,20 +573,30 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
                   </span>
                 )}
                 {sugestoesEndereco.length > 0 && (
-                  <ul className="absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
+                  <ul className="absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden max-h-64 overflow-y-auto">
                     {sugestoesEndereco.map((s) => (
-                      <li key={s}>
+                      <li key={s.completo}>
                         <button
                           type="button"
                           onClick={() => escolherSugestao(s)}
                           className="w-full text-left px-3 py-2.5 text-xs text-slate-800 hover:bg-blue-50 flex items-start gap-1.5 cursor-pointer"
                         >
                           <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
-                          <span>{s}</span>
+                          <span className="min-w-0">
+                            <span className="block font-bold text-slate-900">{s.titulo}</span>
+                            <span className="block text-[10px] text-slate-500 leading-tight">
+                              {s.detalhe}
+                            </span>
+                          </span>
                         </button>
                       </li>
                     ))}
                   </ul>
+                )}
+                {coordenadas && (
+                  <p className="mt-1 text-[10px] font-bold text-emerald-600 uppercase">
+                    Local confirmado no mapa — rota exata para o motorista
+                  </p>
                 )}
               </div>
 
