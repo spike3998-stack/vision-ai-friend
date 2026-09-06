@@ -13,16 +13,26 @@ import {
   Download,
   X,
   FileText,
+  Trash2,
 } from 'lucide-react';
 
 import { ChecklistViatura, OrdemServico, UsuarioCadastrado } from '../types';
 import { GRUPAMENTOS, MATRICULA_DESENVOLVEDOR } from '../data/grupamentos';
-import { fetchOrdensServidor, fetchChecklistsServidor } from '../services/api';
+import {
+  fetchOrdensServidor,
+  fetchChecklistsServidor,
+  excluirOrdemServidor,
+  excluirChecklistServidor,
+} from '../services/api';
 import { gerarLivroAtaPdf } from '../services/livroAtaPdf';
 
 interface LivroAtaProps {
   usuarioAtivo: UsuarioCadastrado | null;
   onVoltar: () => void;
+  /** Posto de serviço ocupado agora pelo agente (null = fora de serviço). */
+  postoAtual?: string | null | undefined;
+  /** Momento (epoch ms) em que o agente assumiu o posto. */
+  inicioPlantao?: number | null | undefined;
 }
 
 const MESES = [
@@ -44,7 +54,12 @@ function chaveDia(d: Date): string {
   return `${dia}/${mes}/${d.getFullYear()}`;
 }
 
-export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
+export function LivroAta({
+  usuarioAtivo,
+  onVoltar,
+  postoAtual = null,
+  inicioPlantao = null,
+}: LivroAtaProps) {
   const ehDesenvolvedor =
     usuarioAtivo?.isDesenvolvedor || usuarioAtivo?.matricula === MATRICULA_DESENVOLVEDOR;
 
@@ -78,11 +93,38 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [livroAberto]);
 
-  const podeAbrir = (sigla: string) =>
-    sigla === 'CIOSP' ||
-    ehDesenvolvedor ||
-    usuarioAtivo?.grupamento === 'INSPETORIA' ||
-    usuarioAtivo?.grupamento === sigla;
+  const emServico = Boolean(postoAtual);
+
+  /** Dias que o agente comum pode consultar: apenas o dia do plantão em andamento. */
+  const diasPermitidos = useMemo(() => {
+    const dias = new Set<string>();
+    dias.add(chaveDia(new Date()));
+    if (inicioPlantao) dias.add(chaveDia(new Date(inicioPlantao)));
+    return dias;
+  }, [inicioPlantao]);
+
+  const podeAbrir = (sigla: string) => {
+    if (ehDesenvolvedor) return true;
+    if (!emServico) return false;
+    if (sigla === 'CIOSP') return postoAtual === 'CIOSP';
+    return usuarioAtivo?.grupamento === sigla;
+  };
+
+  const podeAbrirDia = (chave: string) => ehDesenvolvedor || diasPermitidos.has(chave);
+
+  const excluirOrdem = async (id: string) => {
+    if (!ehDesenvolvedor) return;
+    if (!window.confirm('Apagar definitivamente este registro do livro?')) return;
+    const ok = await excluirOrdemServidor(id);
+    if (ok) setOrdens((prev) => prev.filter((o) => o.id !== id));
+  };
+
+  const excluirChecklist = async (id: string) => {
+    if (!ehDesenvolvedor) return;
+    if (!window.confirm('Apagar definitivamente este check-list do livro?')) return;
+    const ok = await excluirChecklistServidor(id);
+    if (ok) setChecklists((prev) => prev.filter((c) => c.id !== id));
+  };
 
   const ehLivroCiosp = livroAberto === 'CIOSP';
 
@@ -112,6 +154,12 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
   );
 
   const selecionarDia = (chave: string) => {
+    if (!podeAbrirDia(chave)) {
+      setAvisoBloqueio(
+        'Você só pode consultar o livro do dia do seu plantão. Datas anteriores ficam restritas ao administrador.',
+      );
+      return;
+    }
     setDiaSelecionado(chave);
     setModalDownload(true);
   };
