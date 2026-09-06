@@ -132,7 +132,7 @@ export async function gerarLivroAtaPdf({
         : o.respondidoPor
           ? o.respondidoPor.toUpperCase()
           : 'PLANTÃO',
-      `${o.status.toUpperCase()}${o.viaturaPrefixo ? `\nVTR: ${o.viaturaPrefixo}` : ''}${o.reboqueAcionado ? '\nREBOQUE ACIONADO' : ''}${o.relato ? `\nRELATO: ${o.relato}` : ''}${o.fotos?.length ? `\n${o.fotos.length} foto(s)` : ''}`,
+      `${o.status.toUpperCase()}${o.viaturaPrefixo ? `\nVTR: ${o.viaturaPrefixo}` : ''}${o.reboqueAcionado ? '\nREBOQUE ACIONADO' : ''}${o.relato ? `\nRELATO: ${o.relato}` : ''}${o.motivoRecusa ? `\nMOTIVO DA RECUSA: ${o.motivoRecusa}` : ''}${o.motivoEspera ? `\nMOTIVO DA ESPERA${o.esperaMinutos ? ` (${o.esperaMinutos} MIN)` : ''}: ${o.motivoEspera}` : ''}${o.fotos?.length ? `\n${o.fotos.length} foto(s)` : ''}`,
       o.finalizadoPor ? `${o.finalizadoPor.toUpperCase()}\nMAT. ${o.finalizadoPorMatricula || '---'}` : '',
     ]);
     autoTable(doc, {

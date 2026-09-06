@@ -41,6 +41,12 @@ export interface OrdemServico {
   respondidoPorMatricula?: string | undefined;
   esperaMinutos?: number | undefined;
   esperaAte?: number | undefined;
+  /** Justificativa registrada pelo grupamento ao recusar a ordem. */
+  motivoRecusa?: string | undefined;
+  /** Justificativa registrada pelo grupamento ao colocar a ordem em espera. */
+  motivoEspera?: string | undefined;
+  motivoRegistradoPor?: string | undefined;
+  motivoRegistradoEm?: string | undefined;
   // Boletim de ocorrência no local
   equipe?: MembroEquipe[] | undefined;
   viaturaPrefixo?: string | undefined;
