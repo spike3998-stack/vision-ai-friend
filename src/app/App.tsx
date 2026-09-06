@@ -18,6 +18,7 @@ import {
   excluirViaturaServidor,
 } from './services/api';
 import { processarFotoPerfil, lerArquivoParaEdicao } from './services/imageUtils';
+import { enablePush, registrarTokenNoServidor } from './services/notifications';
 import { DevMenu } from './components/DevMenu';
 import { DevAutorizar } from './components/DevAutorizar';
 import { DevConsultar } from './components/DevConsultar';
@@ -33,9 +34,23 @@ import { PadAssinatura } from './components/PadAssinatura';
 export default function App() {
   // Navigation
   const [currentScreen, setCurrentScreen] = useState<Screen>('login');
-  
+
   // Selected role under Posto de Serviço
   const [funcaoSelecionada, setFuncaoSelecionada] = useState<FuncaoPosto | null>(null);
+
+  // Registra token push no servidor vinculado à matrícula
+  const registrarPush = async (matricula: string) => {
+    try {
+      const resultado = await enablePush();
+      if (resultado.status === 'registered') {
+        await registrarTokenNoServidor(matricula, resultado.token);
+      } else if (resultado.status !== 'unsupported' && resultado.status !== 'not-configured') {
+        console.warn('[Push]', resultado.status, resultado.message);
+      }
+    } catch (err) {
+      console.warn('[Push] Erro ao registrar push:', err);
+    }
+  };
 
   // Lista de todos os usuários cadastrados
   const [usuarios, setUsuarios] = useState<UsuarioCadastrado[]>(getUsuariosArmazenados);
@@ -210,6 +225,7 @@ export default function App() {
     // Acesso liberado para usuário regular autorizado
     setUsuarioAtivo(usuarioEncontrado);
     setCurrentScreen('menu');
+    registrarPush(usuarioEncontrado.matricula);
   };
 
   const matriculaDuplicada =
@@ -292,6 +308,7 @@ export default function App() {
 
     // Envia ao servidor centralizado (assim aparece imediatamente para o desenvolvedor)
     await cadastrarUsuarioServidor(novoUsuario);
+    registrarPush(novoUsuario.matricula);
 
     if (isDev) {
       setUsuarioAtivo(novoUsuario);

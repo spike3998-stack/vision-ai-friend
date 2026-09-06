@@ -29,6 +29,56 @@ async function getAdmin() {
 
 type Admin = Awaited<ReturnType<typeof getAdmin>>;
 
+const GATEWAY_URL = "https://connector-gateway.lovable.dev/firebase_messaging";
+
+async function enviarPush(tokens: string[], titulo: string, corpo: string, dados?: Record<string, string>) {
+  const lovKey = process.env["LOVABLE_API_KEY"];
+  const connKey = process.env["FIREBASE_MESSAGING_API_KEY"];
+  if (!lovKey || !connKey || tokens.length === 0) return { enviados: 0, falhas: tokens.length };
+
+  let enviados = 0;
+  let falhas = 0;
+  for (const token of tokens) {
+    try {
+      const res = await fetch(`${GATEWAY_URL}/v1/projects/_/messages:send`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${lovKey}`,
+          "X-Connection-Api-Key": connKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: {
+            token,
+            notification: { title: titulo, body: corpo },
+            data: dados || {},
+          },
+        }),
+      });
+      if (res.ok) {
+        enviados++;
+      } else {
+        falhas++;
+        const text = await res.text().catch(() => "");
+        console.warn("[FCM] falha ao enviar para token:", res.status, text);
+      }
+    } catch (err) {
+      falhas++;
+      console.warn("[FCM] erro ao enviar push:", err);
+    }
+  }
+  return { enviados, falhas };
+}
+
+async function tokensPorMatriculas(db: Admin, matriculas: string[]) {
+  if (matriculas.length === 0) return [];
+  const { data } = await db
+    .from("gm_device_tokens")
+    .select("token")
+    .in("matricula", matriculas);
+  return (data ?? []).map((r) => r.token as string);
+}
+
 async function listarUsuarios(db: Admin) {
   const { data } = await db.from("gm_usuarios").select("dados").order("criado_em");
   return (data ?? []).map((r) => r.dados as Record<string, unknown>);
@@ -281,6 +331,24 @@ async function handle(body: any) {
         dataHora: o.dataHora || agora(),
       };
       await db.from("gm_ordens").upsert({ id, dados: ordem }, { onConflict: "id" });
+
+      // Notifica ocupantes do grupamento destino
+      try {
+        const mapa = await mapaPostos(db);
+        const ocupantes = (mapa[o.grupamento as string] ?? []) as any[];
+        const matriculas = ocupantes.map((oc) => String(oc.matricula ?? "")).filter(Boolean);
+        if (matriculas.length > 0) {
+          await enviarPush(
+            await tokensPorMatriculas(db, matriculas),
+            `Nova ordem de serviço • ${o.grupamento}`,
+            `${o.descricao} – ${o.endereco}`,
+            { ordemId: id, tipo: "nova_ordem" }
+          );
+        }
+      } catch (err) {
+        console.warn("[Notificação] falha ao notificar grupamento:", err);
+      }
+
       return json({ success: true, ordem });
     }
 
@@ -292,14 +360,61 @@ async function handle(body: any) {
         .eq("id", id)
         .maybeSingle();
       if (!existente) return json({ error: "Ordem não encontrada." }, 404);
-      const ordem = { ...((existente.dados as any) ?? {}), ...(body.dados ?? {}), id };
+      const anterior = (existente.dados as any) ?? {};
+      const ordem = { ...anterior, ...(body.dados ?? {}), id };
       await db.from("gm_ordens").update({ dados: ordem }).eq("id", id);
+
+      // Notifica CIOSP quando reboque é acionado
+      if (body.dados?.reboqueAcionado && !anterior.reboqueAcionado) {
+        try {
+          const mapa = await mapaPostos(db);
+          const ocupantes = (mapa["CIOSP"] ?? []) as any[];
+          const matriculas = ocupantes.map((oc) => String(oc.matricula ?? "")).filter(Boolean);
+          if (matriculas.length > 0) {
+            await enviarPush(
+              await tokensPorMatriculas(db, matriculas),
+              "Reboque acionado",
+              `${ordem.descricao} – ${ordem.endereco}`,
+              { ordemId: id, tipo: "reboque" }
+            );
+          }
+        } catch (err) {
+          console.warn("[Notificação] falha ao notificar CIOSP:", err);
+        }
+      }
+
       return json({ success: true, ordem });
     }
 
     case "ordens.excluir": {
       await db.from("gm_ordens").delete().eq("id", String(body.id));
       return json({ success: true });
+    }
+
+    // ---------------- DISPOSITIVOS / NOTIFICAÇÕES ----------------
+    case "dispositivos.registrar": {
+      const matricula = String(body.matricula ?? "").trim();
+      const token = String(body.token ?? "").trim();
+      if (!matricula || !token) {
+        return json({ error: "Matrícula e token são obrigatórios." }, 400);
+      }
+      const id = `dt-${matricula}-${token.slice(-24)}`;
+      await db
+        .from("gm_device_tokens")
+        .upsert({ id, matricula, token, dados: {} }, { onConflict: "id" });
+      return json({ success: true });
+    }
+
+    case "notificacoes.enviar": {
+      const matriculas = Array.isArray(body.matriculas) ? body.matriculas.map(String) : [];
+      const titulo = String(body.titulo ?? "");
+      const corpo = String(body.corpo ?? "");
+      if (!titulo || !corpo) {
+        return json({ error: "Título e corpo são obrigatórios." }, 400);
+      }
+      const tokens = await tokensPorMatriculas(db, matriculas);
+      const resultado = await enviarPush(tokens, titulo, corpo, body.dados || {});
+      return json({ success: true, ...resultado });
     }
 
     default:

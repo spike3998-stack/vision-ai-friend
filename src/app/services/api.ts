@@ -204,3 +204,20 @@ export async function excluirOrdemServidor(id: string): Promise<boolean> {
   const data = await chamar<any>({ acao: 'ordens.excluir', id });
   return Boolean(data?.success ?? data);
 }
+
+/** NOTIFICAÇÕES PUSH */
+export async function enviarNotificacaoServidor(
+  matriculas: string[],
+  titulo: string,
+  corpo: string,
+  dados?: Record<string, string>
+): Promise<boolean> {
+  const data = await chamar<any>({
+    acao: 'notificacoes.enviar',
+    matriculas,
+    titulo,
+    corpo,
+    dados,
+  });
+  return Boolean(data?.success);
+}

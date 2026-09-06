@@ -1,0 +1,2 @@
+CREATE POLICY "Bloqueia acesso direto de usuarios" ON public.gm_device_tokens FOR ALL TO authenticated USING (false) WITH CHECK (false);
+CREATE POLICY "Bloqueia acesso direto anonimo" ON public.gm_device_tokens FOR ALL TO anon USING (false) WITH CHECK (false);

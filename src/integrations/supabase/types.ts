@@ -32,6 +32,33 @@ export type Database = {
         }
         Relationships: []
       }
+      gm_device_tokens: {
+        Row: {
+          atualizado_em: string
+          criado_em: string
+          dados: Json
+          id: string
+          matricula: string
+          token: string
+        }
+        Insert: {
+          atualizado_em?: string
+          criado_em?: string
+          dados?: Json
+          id: string
+          matricula: string
+          token: string
+        }
+        Update: {
+          atualizado_em?: string
+          criado_em?: string
+          dados?: Json
+          id?: string
+          matricula?: string
+          token?: string
+        }
+        Relationships: []
+      }
       gm_ordens: {
         Row: {
           atualizado_em: string
