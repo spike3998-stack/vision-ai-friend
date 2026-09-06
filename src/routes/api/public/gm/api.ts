@@ -352,6 +352,32 @@ async function handle(body: any) {
       return json({ success: true });
     }
 
+    // ---------------- DISPOSITIVOS / NOTIFICAÇÕES ----------------
+    case "dispositivos.registrar": {
+      const matricula = String(body.matricula ?? "").trim();
+      const token = String(body.token ?? "").trim();
+      if (!matricula || !token) {
+        return json({ error: "Matrícula e token são obrigatórios." }, 400);
+      }
+      const id = `dt-${matricula}-${token.slice(-24)}`;
+      await db
+        .from("gm_device_tokens")
+        .upsert({ id, matricula, token, dados: {} }, { onConflict: "id" });
+      return json({ success: true });
+    }
+
+    case "notificacoes.enviar": {
+      const matriculas = Array.isArray(body.matriculas) ? body.matriculas.map(String) : [];
+      const titulo = String(body.titulo ?? "");
+      const corpo = String(body.corpo ?? "");
+      if (!titulo || !corpo) {
+        return json({ error: "Título e corpo são obrigatórios." }, 400);
+      }
+      const tokens = await tokensPorMatriculas(db, matriculas);
+      const resultado = await enviarPush(tokens, titulo, corpo, body.dados || {});
+      return json({ success: true, ...resultado });
+    }
+
     default:
       return json({ error: `Ação desconhecida: ${acao}` }, 400);
   }
