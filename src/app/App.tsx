@@ -37,6 +37,9 @@ import { ChatRadio } from './components/ChatRadio';
 
 
 
+/** Tipos sanguíneos disponíveis no cadastro. */
+const TIPOS_SANGUINEOS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
 export default function App() {
   // Navigation
   const [currentScreen, setCurrentScreen] = useState<Screen>('login');
@@ -1068,22 +1071,27 @@ export default function App() {
                   >
                     <span>TIPO SANGUÍNEO:</span>
                     <span className="text-[11px] font-normal text-slate-500 normal-case">
-                      (Preenchimento manual)
+                      (Selecione na lista)
                     </span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-rose-500">
                       <Droplets className="w-4 h-4" />
                     </div>
-                    <input
+                    <select
                       id="input-cad-tipo-sanguineo"
-                      type="text"
                       value={cadTipoSanguineo}
                       onChange={(e) => setCadTipoSanguineo(e.target.value)}
-                      placeholder="Ex: O+, A+, B+, AB-, etc."
-                      className="w-full pl-10 pr-3.5 py-3 border border-slate-300 rounded-xl text-sm sm:text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                      className="w-full pl-10 pr-3.5 py-3 border border-slate-300 rounded-xl text-sm sm:text-base text-slate-900 bg-white appearance-none focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                       required
-                    />
+                    >
+                      <option value="">Selecione o tipo sanguíneo</option>
+                      {TIPOS_SANGUINEOS.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
