@@ -221,3 +221,30 @@ export async function enviarNotificacaoServidor(
   });
   return Boolean(data?.success);
 }
+
+/** RÁDIO / CHAT */
+export interface MensagemChat {
+  id: string;
+  canal: string;
+  autorMatricula: string;
+  autorNome: string;
+  autorGrupamento?: string | undefined;
+  texto?: string | undefined;
+  audio?: string | undefined;
+  duracao?: number | undefined;
+  dataHora: string;
+  criadoEm?: string | undefined;
+}
+
+export async function fetchMensagensChat(canal: string): Promise<MensagemChat[]> {
+  const data = await chamar<MensagemChat[]>({ acao: 'chat.listar', canal });
+  return Array.isArray(data) ? data : [];
+}
+
+export async function enviarMensagemChat(
+  canal: string,
+  mensagem: Partial<MensagemChat>
+): Promise<MensagemChat | null> {
+  const data = await chamar<any>({ acao: 'chat.enviar', canal, mensagem });
+  return data?.mensagem ?? null;
+}
