@@ -201,6 +201,14 @@ export function LivroAta({
           <button
             type="button"
             onClick={() => {
+              if (!podeAbrir('CIOSP')) {
+                setAvisoBloqueio(
+                  emServico
+                    ? 'O Livro Ata CIOSP só pode ser consultado por quem está no posto CIOSP.'
+                    : 'Assuma um posto de serviço para consultar o Livro Ata.',
+                );
+                return;
+              }
               setAvisoBloqueio(null);
               setDiaSelecionado(null);
               setLivroAberto('CIOSP');
@@ -216,7 +224,11 @@ export function LivroAta({
                 Posto de serviço CIOSP — apenas ordens emitidas pela CIOSP
               </p>
             </div>
-            <ChevronRight className="w-5 h-5 text-slate-400" />
+            {podeAbrir('CIOSP') ? (
+              <ChevronRight className="w-5 h-5 text-slate-400" />
+            ) : (
+              <Lock className="w-4 h-4 text-slate-400" />
+            )}
           </button>
 
           {GRUPAMENTOS.map((g) => {
@@ -227,7 +239,11 @@ export function LivroAta({
                 type="button"
                 onClick={() => {
                   if (!liberado) {
-                    setAvisoBloqueio(g.sigla);
+                    setAvisoBloqueio(
+                      emServico
+                        ? `O Livro Ata ${g.sigla} só pode ser consultado por agentes do grupamento ${g.sigla}.`
+                        : 'Assuma um posto de serviço para consultar o Livro Ata do seu grupamento.',
+                    );
                     return;
                   }
                   setAvisoBloqueio(null);
@@ -264,10 +280,7 @@ export function LivroAta({
         {avisoBloqueio && (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-center">
             <p className="text-xs font-bold text-rose-700 uppercase">Acesso restrito</p>
-            <p className="text-[11px] text-rose-600 mt-1">
-              O Livro Ata {avisoBloqueio} só pode ser consultado por agentes do grupamento{' '}
-              {avisoBloqueio}.
-            </p>
+            <p className="text-[11px] text-rose-600 mt-1">{avisoBloqueio}</p>
           </div>
         )}
 
