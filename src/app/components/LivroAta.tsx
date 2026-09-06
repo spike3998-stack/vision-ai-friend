@@ -544,8 +544,20 @@ export function LivroAta({
                     <p className="text-xs font-black text-slate-800 uppercase">
                       {c.prefixoViatura} • {c.placaViatura}
                     </p>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase shrink-0">
-                      {c.statusGeral.replace(/_/g, ' ')}
+                    <span className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">
+                        {c.statusGeral.replace(/_/g, ' ')}
+                      </span>
+                      {ehDesenvolvedor && (
+                        <button
+                          type="button"
+                          onClick={() => void excluirChecklist(c.id)}
+                          className="p-1 rounded-md text-rose-500 hover:bg-rose-50 cursor-pointer"
+                          aria-label="Apagar check-list"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-600">
