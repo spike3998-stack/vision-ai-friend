@@ -204,7 +204,7 @@ export const BoletimOcorrencia: React.FC<BoletimOcorrenciaProps> = ({
           <span>Equipe empenhada</span>
           {prefixo && (
             <span className="ml-auto text-[11px] font-black uppercase text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md flex items-center gap-1">
-              <Car className="w-3 h-3" /> VTR {prefixo}
+              <Car className="w-3 h-3" />&nbsp;{prefixo}
             </span>
           )}
         </h3>
