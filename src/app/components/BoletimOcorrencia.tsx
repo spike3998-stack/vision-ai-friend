@@ -366,12 +366,49 @@ export const BoletimOcorrencia: React.FC<BoletimOcorrenciaProps> = ({
         <button
           type="button"
           onClick={handleSalvar}
-          disabled={salvando}
+          disabled={salvando || encerrando}
           className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
         >
           <Save className="w-4 h-4" />
           <span>{salvando ? 'Salvando...' : 'Salvar boletim'}</span>
         </button>
+
+        {!confirmandoEncerrar ? (
+          <button
+            type="button"
+            onClick={() => setConfirmandoEncerrar(true)}
+            disabled={salvando || encerrando}
+            className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+          >
+            <Check className="w-4 h-4" />
+            <span>Encerrar ocorrência</span>
+          </button>
+        ) : (
+          <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3 space-y-2">
+            <p className="text-xs font-bold text-emerald-900">
+              Ao encerrar, a ocorrência é finalizada e o registro completo vai para o Livro Ata do{' '}
+              {ordem.grupamento}. Não será mais possível editar este boletim.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleEncerrar}
+                disabled={encerrando}
+                className="flex-1 py-2.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase cursor-pointer disabled:opacity-50"
+              >
+                {encerrando ? 'Encerrando...' : 'Confirmar encerramento'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmandoEncerrar(false)}
+                disabled={encerrando}
+                className="flex-1 py-2.5 px-3 rounded-lg border border-slate-300 bg-white text-slate-700 font-black text-xs uppercase cursor-pointer disabled:opacity-50"
+              >
+                Voltar
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
