@@ -415,6 +415,36 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
                       {o.relato}
                     </p>
                   )}
+                  {o.motivoRecusa && (
+                    <div className="text-[11px] text-rose-800 bg-rose-50 border border-rose-200 rounded-lg p-2">
+                      <strong className="block text-[10px] font-black uppercase">
+                        Motivo da recusa
+                        {o.ocorrenciaStatus === 'recusada_no_local' ? ' (no local)' : ''}
+                      </strong>
+                      <span className="whitespace-pre-wrap">{o.motivoRecusa}</span>
+                      {o.motivoRegistradoPor && (
+                        <span className="block text-[10px] text-rose-500 mt-0.5">
+                          Registrado por {o.motivoRegistradoPor}
+                          {o.motivoRegistradoEm ? ` • ${o.motivoRegistradoEm}` : ''}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {o.motivoEspera && (
+                    <div className="text-[11px] text-slate-700 bg-slate-50 border border-slate-200 rounded-lg p-2">
+                      <strong className="block text-[10px] font-black uppercase">
+                        Motivo da espera
+                        {o.esperaMinutos ? ` (${o.esperaMinutos} min)` : ''}
+                      </strong>
+                      <span className="whitespace-pre-wrap">{o.motivoEspera}</span>
+                      {o.motivoRegistradoPor && (
+                        <span className="block text-[10px] text-slate-400 mt-0.5">
+                          Registrado por {o.motivoRegistradoPor}
+                          {o.motivoRegistradoEm ? ` • ${o.motivoRegistradoEm}` : ''}
+                        </span>
+                      )}
+                    </div>
+                  )}
                   {o.reboqueAcionado && (
                     <span className="inline-block text-[10px] font-bold text-amber-700 bg-amber-100 rounded-full px-2 py-0.5">
                       Reboque acionado
