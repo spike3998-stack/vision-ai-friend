@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Lock, Eye, EyeOff, LogIn, UserPlus, ArrowLeft, LogOut, CheckCircle2, AlertCircle, Shield, Droplets, Users, X, Pencil, Camera, Trash2, Upload, Crop, Navigation } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, LogIn, UserPlus, ArrowLeft, LogOut, CheckCircle2, AlertCircle, Shield, Droplets, Users, X, Pencil, Camera, Trash2, Upload, Crop, Navigation, Radio } from 'lucide-react';
 
 import { Screen, FuncaoPosto, SiglaGrupamento, UsuarioCadastrado, MapaOcupacaoPostos, OcupantePosto, Viatura, MembroEquipe } from './types';
 import { GRUPAMENTOS, MATRICULA_DESENVOLVEDOR } from './data/grupamentos';
@@ -30,6 +30,7 @@ import { EquipePainel } from './components/EquipePainel';
 import { LivroAta } from './components/LivroAta';
 import { PadAssinatura } from './components/PadAssinatura';
 import { BannerNotificacoes } from './components/BannerNotificacoes';
+import { ChatRadio } from './components/ChatRadio';
 
 
 
@@ -56,6 +57,9 @@ export default function App() {
 
   // Lista de todos os usuários cadastrados
   const [usuarios, setUsuarios] = useState<UsuarioCadastrado[]>(getUsuariosArmazenados);
+
+  // Rádio de comunicação (chat geral, individual e do grupamento)
+  const [chatAberto, setChatAberto] = useState(false);
 
   // Lista de viaturas cadastradas pelo desenvolvedor
   const [viaturas, setViaturas] = useState<Viatura[]>(getViaturasArmazenadas);
@@ -355,7 +359,10 @@ export default function App() {
     // Se o usuário ativo já está registrado nesse posto, permite acesso
     const jaEstaNoPosto = usuarioAtivo && ocupantesAtuais.some((o) => o.matricula === usuarioAtivo.matricula);
 
-    if (limite !== undefined && ocupantesAtuais.length >= limite && !jaEstaNoPosto) {
+    // A Inspetoria entra em qualquer posto, mesmo cheio, para consultar quem está ali
+    const ehInspetoria = usuarioAtivo?.grupamento === 'INSPETORIA';
+
+    if (limite !== undefined && ocupantesAtuais.length >= limite && !jaEstaNoPosto && !ehInspetoria) {
       setAlertaPostoCoberto({
         posto: funcao,
         limite,
@@ -620,6 +627,28 @@ export default function App() {
 
           {usuarioAtivo && currentScreen !== 'login' && (
             <BannerNotificacoes matricula={usuarioAtivo.matricula} />
+          )}
+
+          {usuarioAtivo && currentScreen !== 'login' && currentScreen !== 'cadastrar' && currentScreen !== 'assinatura' && (
+            <div className="flex justify-end mb-3">
+              <button
+                type="button"
+                onClick={() => setChatAberto(true)}
+                className="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-sm"
+                title="Rádio de comunicação"
+              >
+                <Radio className="w-4 h-4 text-blue-400" />
+                <span>Rádio</span>
+              </button>
+            </div>
+          )}
+
+          {usuarioAtivo && chatAberto && (
+            <ChatRadio
+              usuarioAtivo={usuarioAtivo}
+              usuarios={usuarios}
+              onFechar={() => setChatAberto(false)}
+            />
           )}
 
 

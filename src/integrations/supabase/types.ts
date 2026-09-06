@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      gm_chat_mensagens: {
+        Row: {
+          autor_matricula: string
+          canal: string
+          criado_em: string
+          dados: Json
+          id: string
+        }
+        Insert: {
+          autor_matricula: string
+          canal: string
+          criado_em?: string
+          dados?: Json
+          id: string
+        }
+        Update: {
+          autor_matricula?: string
+          canal?: string
+          criado_em?: string
+          dados?: Json
+          id?: string
+        }
+        Relationships: []
+      }
       gm_checklists: {
         Row: {
           criado_em: string

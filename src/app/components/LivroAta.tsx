@@ -79,7 +79,10 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
   }, [livroAberto]);
 
   const podeAbrir = (sigla: string) =>
-    sigla === 'CIOSP' || ehDesenvolvedor || usuarioAtivo?.grupamento === sigla;
+    sigla === 'CIOSP' ||
+    ehDesenvolvedor ||
+    usuarioAtivo?.grupamento === 'INSPETORIA' ||
+    usuarioAtivo?.grupamento === sigla;
 
   const ehLivroCiosp = livroAberto === 'CIOSP';
 
