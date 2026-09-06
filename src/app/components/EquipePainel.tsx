@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Shield, Users, ArrowLeft, Radio, Car, CheckCircle2, X, Search } from 'lucide-react';
+import { Shield, Users, ArrowLeft, Radio, Car, CheckCircle2, X, Search, Footprints } from 'lucide-react';
 import { UsuarioCadastrado, OcupantePosto, MembroEquipe, Viatura } from '../types';
 import { getViaturasArmazenadas } from '../services/storage';
 import { GRUPAMENTOS } from '../data/grupamentos';
 import { OrdensRecebidas } from './OrdensRecebidas';
+import { ModalPatrulhamento } from './ModalPatrulhamento';
+
 
 interface EquipePainelProps {
   usuarioAtivo: UsuarioCadastrado | null;
