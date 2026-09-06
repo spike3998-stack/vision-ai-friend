@@ -91,6 +91,38 @@ export const BoletimOcorrencia: React.FC<BoletimOcorrenciaProps> = ({
     window.setTimeout(() => setAviso(null), 3000);
   };
 
+  const handleEncerrar = async () => {
+    if (!relato.trim()) {
+      setConfirmandoEncerrar(false);
+      setAviso(null);
+      window.alert('Escreva o relato da ocorrência antes de encerrar.');
+      return;
+    }
+    setEncerrando(true);
+    const agora = new Date().toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    const dados: Partial<OrdemServico> = {
+      relato,
+      fotos,
+      ocorrenciaStatus: 'finalizada',
+      ocorrenciaFinalizadaEm: agora,
+      equipe: equipeFinal,
+    };
+    if (prefixo) dados.viaturaPrefixo = prefixo;
+    const atualizada = await atualizarOrdemServidor(ordem.id, dados);
+    const final = (atualizada ?? { ...ordem, ...dados }) as OrdemServico;
+    setEncerrando(false);
+    setConfirmandoEncerrar(false);
+    onOrdemAtualizada(final);
+    if (onOcorrenciaEncerrada) onOcorrenciaEncerrada(final);
+    else onVoltar();
+  };
+
   const handleFotos = async (lista: FileList | null) => {
     if (!lista || lista.length === 0) return;
     const novas: string[] = [];
