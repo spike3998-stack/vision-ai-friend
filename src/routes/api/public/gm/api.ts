@@ -157,6 +157,21 @@ async function handle(body: any) {
         .from("gm_usuarios")
         .upsert({ id: usuario.id, matricula: mat, dados: usuario }, { onConflict: "id" });
 
+      // Notifica o desenvolvedor sobre novo cadastro aguardando autorização
+      if (!isDev && !existente) {
+        try {
+          const tokens = await tokensPorMatriculas(db, [MATRICULA_DESENVOLVEDOR]);
+          await enviarPush(
+            tokens,
+            "Novo cadastro aguardando autorização",
+            `${usuario.nomeDeGuerra} (${mat}) • ${usuario.grupamento}`,
+            { tipo: "novo_cadastro", matricula: mat },
+          );
+        } catch (err) {
+          console.warn("[Notificação] falha ao avisar desenvolvedor:", err);
+        }
+      }
+
       return json({
         success: true,
         usuario,
