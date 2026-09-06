@@ -418,8 +418,9 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
                   {o.motivoRecusa && (
                     <div className="text-[11px] text-rose-800 bg-rose-50 border border-rose-200 rounded-lg p-2">
                       <strong className="block text-[10px] font-black uppercase">
-                        Motivo da recusa
-                        {o.ocorrenciaStatus === 'recusada_no_local' ? ' (no local)' : ''}
+                        {o.ocorrenciaStatus === 'recusada_no_local'
+                          ? 'Motivo da finalização no local'
+                          : 'Motivo da recusa'}
                       </strong>
                       <span className="whitespace-pre-wrap">{o.motivoRecusa}</span>
                       {o.motivoRegistradoPor && (
