@@ -105,6 +105,30 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
     (c) => apenasData(c.dataHora) === diaSelecionado,
   );
 
+  const selecionarDia = (chave: string) => {
+    setDiaSelecionado(chave);
+    setModalDownload(true);
+  };
+
+  const baixarLivroAta = async () => {
+    if (!livroAberto || !diaSelecionado || gerandoPdf) return;
+    setGerandoPdf(true);
+    try {
+      const brasao = GRUPAMENTOS.find((g) => g.sigla === livroAberto)?.imagem;
+      await gerarLivroAtaPdf({
+        sigla: livroAberto,
+        data: diaSelecionado,
+        ordens: ordensDoDia,
+        checklists: checklistsDoDia,
+        usuario: usuarioAtivo,
+        brasaoUrl: brasao,
+      });
+      setModalDownload(false);
+    } finally {
+      setGerandoPdf(false);
+    }
+  };
+
   /* ---------------- TELA 1: ESCOLHA DO LIVRO ---------------- */
   if (!livroAberto) {
     return (
@@ -285,7 +309,7 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
                 <button
                   key={chave}
                   type="button"
-                  onClick={() => setDiaSelecionado(chave)}
+                  onClick={() => selecionarDia(chave)}
                   className={`relative aspect-square rounded-lg text-xs font-bold cursor-pointer transition ${
                     ativo
                       ? 'bg-slate-900 text-white'
