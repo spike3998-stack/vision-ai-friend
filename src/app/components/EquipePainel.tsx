@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Shield, Users, ArrowLeft, Radio, Car, CheckCircle2, X, Search } from 'lucide-react';
+import { Shield, Users, ArrowLeft, Radio, Car, CheckCircle2, X, Search, Footprints } from 'lucide-react';
 import { UsuarioCadastrado, OcupantePosto, MembroEquipe, Viatura } from '../types';
 import { getViaturasArmazenadas } from '../services/storage';
 import { GRUPAMENTOS } from '../data/grupamentos';
 import { OrdensRecebidas } from './OrdensRecebidas';
+import { ModalPatrulhamento } from './ModalPatrulhamento';
+
 
 interface EquipePainelProps {
   usuarioAtivo: UsuarioCadastrado | null;
@@ -33,7 +35,9 @@ export const EquipePainel: React.FC<EquipePainelProps> = ({
   const grupamento = GRUPAMENTOS.find((g) => g.sigla === usuarioAtivo?.grupamento);
   const listaViaturas = viaturas && viaturas.length > 0 ? viaturas : getViaturasArmazenadas();
   const [modalViaturas, setModalViaturas] = useState(false);
+  const [modalPatrulhamento, setModalPatrulhamento] = useState(false);
   const [busca, setBusca] = useState('');
+
   const [prefixoAtivo, setPrefixoAtivo] = useState<string | null>(() => {
     if (viaturaPrefixo) return viaturaPrefixo;
     try {
@@ -114,6 +118,27 @@ export const EquipePainel: React.FC<EquipePainelProps> = ({
         <Car className="w-4 h-4 text-blue-600" />
         <span>{prefixoAtivo ? `Viatura: ${prefixoAtivo}` : 'Escolher viatura'}</span>
       </button>
+
+      {/* PATRULHAMENTO */}
+      <button
+        type="button"
+        onClick={() => setModalPatrulhamento(true)}
+        className="w-full py-3 px-4 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+      >
+        <Footprints className="w-4 h-4 text-emerald-600" />
+        <span>Patrulhamento</span>
+      </button>
+
+      {modalPatrulhamento && (
+        <ModalPatrulhamento
+          usuarioAtivo={usuarioAtivo}
+          posto={posto}
+          equipe={equipe}
+          viaturaPrefixo={prefixoAtivo || undefined}
+          onFechar={() => setModalPatrulhamento(false)}
+        />
+      )}
+
 
       {modalViaturas && (
         <div className="fixed inset-0 z-50 bg-slate-900/70 flex items-end sm:items-center justify-center p-3">
