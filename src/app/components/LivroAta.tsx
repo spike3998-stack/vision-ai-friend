@@ -446,6 +446,49 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
           )}
         </div>
       )}
+
+      {/* JANELA DE DOWNLOAD DO LIVRO ATA DO DIA */}
+      {modalDownload && diaSelecionado && livroAberto && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-5 shadow-2xl space-y-4 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center mx-auto">
+              <FileText className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-black uppercase text-slate-900">
+                Download Livro Ata ({diaSelecionado})
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Documento do livro diário {livroAberto} com as ocorrências
+                {checklistsDoDia.length > 0 ? ', checklists' : ''} e fotos do dia.
+              </p>
+            </div>
+            {ordensDoDia.length === 0 && checklistsDoDia.length === 0 ? (
+              <p className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+                Nenhum registro lançado nesta data.
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void baixarLivroAta()}
+                disabled={gerandoPdf}
+                className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-black text-sm uppercase cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Download className={`w-5 h-5 ${gerandoPdf ? 'animate-bounce' : ''}`} />
+                <span>{gerandoPdf ? 'Gerando documento...' : 'Baixar documento'}</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setModalDownload(false)}
+              className="w-full py-2 text-xs font-bold text-slate-500 hover:text-slate-800 cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <X className="w-3.5 h-3.5" />
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
