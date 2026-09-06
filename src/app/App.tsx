@@ -18,6 +18,7 @@ import {
   excluirViaturaServidor,
 } from './services/api';
 import { processarFotoPerfil, lerArquivoParaEdicao } from './services/imageUtils';
+import { enablePush, registrarTokenNoServidor } from './services/notifications';
 import { DevMenu } from './components/DevMenu';
 import { DevAutorizar } from './components/DevAutorizar';
 import { DevConsultar } from './components/DevConsultar';
