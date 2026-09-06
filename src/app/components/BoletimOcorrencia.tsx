@@ -410,11 +410,23 @@ export const BoletimOcorrencia: React.FC<BoletimOcorrenciaProps> = ({
               <p className="text-[11px] font-black uppercase text-slate-700">
                 Assinatura de quem está finalizando ({usuarioAtivo?.nomeDeGuerra || 'AGENTE'})
               </p>
-              <PadAssinatura
-                valorInicial={usuarioAtivo?.assinatura}
-                altura={140}
-                onChange={(v) => setAssinatura(v)}
-              />
+              {assinatura ? (
+                <>
+                  <img
+                    src={assinatura}
+                    alt="Assinatura do cadastro"
+                    loading="lazy"
+                    className="w-full h-24 object-contain bg-white border border-slate-200 rounded-lg"
+                  />
+                  <p className="text-[11px] text-slate-500">
+                    Assinatura do seu cadastro, aplicada automaticamente no encerramento.
+                  </p>
+                </>
+              ) : (
+                <p className="text-[11px] font-bold text-rose-700">
+                  Nenhuma assinatura cadastrada. Atualize seu cadastro para poder encerrar.
+                </p>
+              )}
             </div>
             <div className="flex gap-2">
               <button
