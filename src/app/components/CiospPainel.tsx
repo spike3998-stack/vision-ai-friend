@@ -65,6 +65,47 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
   const [descricao, setDescricao] = useState('');
   const [observacoes, setObservacoes] = useState('');
 
+  // Sugestões de endereço enquanto o CIOSP digita (OpenStreetMap, região de Arraial do Cabo)
+  const [sugestoesEndereco, setSugestoesEndereco] = useState<string[]>([]);
+  const [buscandoEndereco, setBuscandoEndereco] = useState(false);
+  const debounceEndereco = React.useRef<number | null>(null);
+
+  const buscarSugestoesEndereco = (texto: string) => {
+    setEndereco(texto);
+    if (debounceEndereco.current) window.clearTimeout(debounceEndereco.current);
+    const consulta = texto.trim();
+    if (consulta.length < 3) {
+      setSugestoesEndereco([]);
+      setBuscandoEndereco(false);
+      return;
+    }
+    setBuscandoEndereco(true);
+    debounceEndereco.current = window.setTimeout(async () => {
+      try {
+        // viewbox limitado a Arraial do Cabo - RJ
+        const viewbox = '-42.10,-22.88,-41.93,-23.04';
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&limit=5&bounded=1&viewbox=${viewbox}&q=${encodeURIComponent(consulta + ', Arraial do Cabo, RJ, Brasil')}`
+        );
+        const achados = (await res.json()) as Array<{ display_name: string }>;
+        const nomes = achados
+          .map((a) => a.display_name.replace(/, Arraial do Cabo.*$/i, ''))
+          .filter((n, i, arr) => n && arr.indexOf(n) === i)
+          .slice(0, 5);
+        setSugestoesEndereco(nomes);
+      } catch {
+        setSugestoesEndereco([]);
+      } finally {
+        setBuscandoEndereco(false);
+      }
+    }, 400);
+  };
+
+  const escolherSugestao = (texto: string) => {
+    setEndereco(texto);
+    setSugestoesEndereco([]);
+  };
+
   const carregar = useCallback(async () => {
     const lista = await fetchOrdensServidor();
     setOrdens(lista);
@@ -458,15 +499,37 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
                 </div>
               </div>
 
-              <div>
+              <div className="relative">
                 <label className="text-xs font-bold uppercase text-slate-600">Endereço *</label>
                 <input
                   type="text"
                   value={endereco}
-                  onChange={(e) => setEndereco(e.target.value)}
+                  onChange={(e) => buscarSugestoesEndereco(e.target.value)}
                   placeholder="Rua, número, bairro"
+                  autoComplete="off"
                   className="mt-1.5 w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-blue-500"
                 />
+                {buscandoEndereco && (
+                  <span className="absolute right-3 top-9 text-[10px] font-bold text-slate-400 uppercase">
+                    buscando...
+                  </span>
+                )}
+                {sugestoesEndereco.length > 0 && (
+                  <ul className="absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
+                    {sugestoesEndereco.map((s) => (
+                      <li key={s}>
+                        <button
+                          type="button"
+                          onClick={() => escolherSugestao(s)}
+                          className="w-full text-left px-3 py-2.5 text-xs text-slate-800 hover:bg-blue-50 flex items-start gap-1.5 cursor-pointer"
+                        >
+                          <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
+                          <span>{s}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
 
               <div>
