@@ -46,6 +46,7 @@ export const OrdensRecebidas: React.FC<OrdensRecebidasProps> = ({
     minutos?: number | undefined;
   } | null>(null);
   const [textoMotivo, setTextoMotivo] = useState('');
+  const [enviandoMotivo, setEnviandoMotivo] = useState(false);
   const [ordemChegada, setOrdemChegada] = useState<OrdemServico | null>(null);
   const [ordemBoletim, setOrdemBoletim] = useState<OrdemServico | null>(null);
   const [, forcarRelogio] = useState(0);
@@ -398,6 +399,89 @@ export const OrdensRecebidas: React.FC<OrdensRecebidasProps> = ({
                 className="w-full py-2 text-xs font-bold text-slate-500 hover:text-slate-800 cursor-pointer"
               >
                 Voltar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* POP-UP DE JUSTIFICATIVA (RECUSA / ESPERA) */}
+      {justificativa && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-xl p-5 space-y-3">
+            <div className="flex items-center gap-2">
+              <div
+                className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  justificativa.tipo === 'espera' ? 'bg-slate-100' : 'bg-rose-50'
+                }`}
+              >
+                {justificativa.tipo === 'espera' ? (
+                  <Clock className="w-5 h-5 text-slate-700" />
+                ) : (
+                  <Ban className="w-5 h-5 text-rose-600" />
+                )}
+              </div>
+              <div>
+                <p className="text-sm font-black uppercase text-slate-900">
+                  {justificativa.tipo === 'espera'
+                    ? `Motivo da espera de ${justificativa.minutos} min`
+                    : 'Motivo da recusa'}
+                </p>
+                <p className="text-[11px] text-slate-500 truncate">
+                  {justificativa.ordem.descricao}
+                </p>
+              </div>
+            </div>
+
+            <textarea
+              value={textoMotivo}
+              onChange={(e) => setTextoMotivo(e.target.value)}
+              rows={5}
+              autoFocus
+              placeholder={
+                justificativa.tipo === 'espera'
+                  ? 'Explique por que a equipe precisa deste tempo de espera.'
+                  : 'Explique o motivo da recusa desta ordem de serviço.'
+              }
+              className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-blue-500 resize-y"
+            />
+
+            <p className="text-[11px] text-slate-500">
+              Esta justificativa fica registrada no Livro Ata do grupamento.
+            </p>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={!textoMotivo.trim() || enviandoMotivo}
+                onClick={async () => {
+                  const motivo = textoMotivo.trim();
+                  if (!motivo) return;
+                  setEnviandoMotivo(true);
+                  const alvo = justificativa;
+                  if (alvo.tipo === 'recusada_no_local') {
+                    await recusarNoLocal(alvo.ordem, motivo);
+                  } else {
+                    await responderOrdem(alvo.ordem, alvo.tipo, alvo.minutos, motivo);
+                  }
+                  setEnviandoMotivo(false);
+                  setJustificativa(null);
+                  setTextoMotivo('');
+                }}
+                className="flex-1 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs uppercase cursor-pointer disabled:opacity-50"
+              >
+                {enviandoMotivo ? 'Registrando...' : 'Registrar e enviar'}
+              </button>
+              <button
+                type="button"
+                disabled={enviandoMotivo}
+                onClick={() => {
+                  setJustificativa(null);
+                  setTextoMotivo('');
+                }}
+                className="flex-1 py-3 rounded-xl border border-slate-300 bg-white text-slate-700 font-black text-xs uppercase cursor-pointer disabled:opacity-50"
+              >
+                Cancelar
               </button>
             </div>
           </div>
