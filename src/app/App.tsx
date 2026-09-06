@@ -16,7 +16,10 @@ import {
   fetchViaturasServidor,
   salvarViaturaServidor,
   excluirViaturaServidor,
+  fetchOrdensServidor,
+  fetchChecklistsServidor,
 } from './services/api';
+import { gerarLivroAtaPdf } from './services/livroAtaPdf';
 import { processarFotoPerfil, lerArquivoParaEdicao } from './services/imageUtils';
 import { enablePush, registrarTokenNoServidor } from './services/notifications';
 import { DevMenu } from './components/DevMenu';
@@ -386,6 +389,7 @@ export default function App() {
         nomeDeGuerra: usuarioAtivo.nomeDeGuerra,
         grupamento: usuarioAtivo.isDesenvolvedor || usuarioAtivo.matricula === MATRICULA_DESENVOLVEDOR ? 'Desenvolvedor' : usuarioAtivo.grupamento,
         dataHora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        inicioEm: Date.now(),
       };
 
       // Se ainda não estava na lista deste posto, adiciona
@@ -456,7 +460,16 @@ export default function App() {
     if (ocupanteAtualizado) ocuparPostoServidor(funcaoSelecionada, ocupanteAtualizado);
   };
 
-  const handleDesocuparPosto = () => {
+  /** Momento em que o agente assumiu o posto atual (limite de plantão: 24 horas). */
+  const inicioPlantao = React.useMemo(() => {
+    if (!usuarioAtivo || !funcaoSelecionada) return null;
+    const oc = (ocupacaoPostos[funcaoSelecionada] || []).find(
+      (o) => o.matricula === usuarioAtivo.matricula
+    );
+    return oc?.inicioEm ?? null;
+  }, [ocupacaoPostos, funcaoSelecionada, usuarioAtivo]);
+
+  const liberarPostoAtual = () => {
     if (!usuarioAtivo) return;
     const funcao = funcaoSelecionada || 'MOTORISTA';
     const novoMapa: MapaOcupacaoPostos = { ...ocupacaoPostos };
@@ -467,7 +480,50 @@ export default function App() {
     salvarOcupacaoPostos(novoMapa);
     desocuparPostoServidor(funcao, usuarioAtivo.matricula);
     setFuncaoSelecionada(null);
+    setViaturaAtivaPrefixo(null);
     setCurrentScreen('posto-servico');
+  };
+
+  const handleDesocuparPosto = () => {
+    if (!usuarioAtivo) return;
+    setModalEncerrarPlantao(true);
+  };
+
+  /** Fecha o livro do plantão: gera o PDF do dia com a assinatura do coordenador no final. */
+  const fecharLivroDoPlantao = async () => {
+    if (!usuarioAtivo || gerandoLivroPlantao) return;
+    setGerandoLivroPlantao(true);
+    try {
+      const sigla =
+        funcaoSelecionada === 'CIOSP' ? 'CIOSP' : String(usuarioAtivo.grupamento || 'CENTRAL');
+      const hoje = new Date().toLocaleDateString('pt-BR');
+      const [todasOrdens, todosChecklists] = await Promise.all([
+        fetchOrdensServidor(),
+        fetchChecklistsServidor(),
+      ]);
+      const daData = (valor?: string) => (valor || '').includes(hoje);
+      const ordensDoDia = todasOrdens.filter(
+        (o) =>
+          daData(o.dataHora) &&
+          (sigla === 'CIOSP' ? o.origemCiosp === true : o.grupamento === sigla)
+      );
+      const checklistsDoDia = todosChecklists.filter(
+        (c) => daData(c.dataHora) && c.motoristaGrupamento === sigla
+      );
+      const brasao = GRUPAMENTOS.find((g) => g.sigla === sigla)?.imagem;
+      await gerarLivroAtaPdf({
+        sigla,
+        data: hoje,
+        ordens: ordensDoDia,
+        checklists: checklistsDoDia,
+        usuario: usuarioAtivo,
+        brasaoUrl: brasao,
+      });
+    } finally {
+      setGerandoLivroPlantao(false);
+      setModalEncerrarPlantao(false);
+      liberarPostoAtual();
+    }
   };
 
   const handleLiberarPostoPorNome = (postoNome: string) => {
