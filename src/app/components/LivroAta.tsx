@@ -372,6 +372,7 @@ export function LivroAta({
               const chave = chaveDia(data);
               const temRegistro = diasComRegistro.has(chave);
               const ativo = diaSelecionado === chave;
+              const liberadoDia = podeAbrirDia(chave);
               return (
                 <button
                   key={chave}
@@ -380,9 +381,11 @@ export function LivroAta({
                   className={`relative aspect-square rounded-lg text-xs font-bold cursor-pointer transition ${
                     ativo
                       ? 'bg-slate-900 text-white'
-                      : temRegistro
-                        ? 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-                        : 'text-slate-600 hover:bg-slate-100'
+                      : !liberadoDia
+                        ? 'text-slate-300'
+                        : temRegistro
+                          ? 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                          : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
                   {data.getDate()}
