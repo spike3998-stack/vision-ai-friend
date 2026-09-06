@@ -55,6 +55,7 @@ export interface OrdemServico {
   origemOrdemId?: string | undefined;
   ehApoio?: boolean | undefined;
   ehPatrulhamento?: boolean | undefined;
+  origemCiosp?: boolean | undefined;
 
   // Assinaturas
   finalizadoPor?: string | undefined;

@@ -174,6 +174,7 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
       observacoes: observacoes.trim(),
       criadoPor: usuarioAtivo?.nomeDeGuerra || 'CIOSP',
       criadoPorMatricula: usuarioAtivo?.matricula || '---',
+      origemCiosp: true,
     });
     setEnviando(false);
     if (!nova) {

@@ -84,7 +84,10 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
   const ehLivroCiosp = livroAberto === 'CIOSP';
 
   const ordensDoLivro = useMemo(
-    () => (ehLivroCiosp ? ordens : ordens.filter((o) => o.grupamento === livroAberto)),
+    () =>
+      ehLivroCiosp
+        ? ordens.filter((o) => o.origemCiosp === true || (!o.ehPatrulhamento && !o.ehApoio && !o.origemCiosp))
+        : ordens.filter((o) => o.grupamento === livroAberto),
     [ordens, livroAberto, ehLivroCiosp],
   );
   const checklistsDoLivro = useMemo(
@@ -159,7 +162,7 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-black text-slate-900 uppercase">Livro Ata CIOSP</p>
               <p className="text-[11px] text-slate-500 truncate">
-                Posto de serviço CIOSP — todas as ordens emitidas
+                Posto de serviço CIOSP — apenas ordens emitidas pela CIOSP
               </p>
             </div>
             <ChevronRight className="w-5 h-5 text-slate-400" />
