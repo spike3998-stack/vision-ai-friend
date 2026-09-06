@@ -408,6 +408,26 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
                 </div>
               )}
 
+              {ordem.ocorrenciaStatus === 'finalizada' && (
+                <div className="text-xs text-emerald-900 bg-emerald-50 border border-emerald-300 rounded-lg p-2.5 space-y-1">
+                  <p className="font-black uppercase flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    Ocorrência encerrada{' '}
+                    {ordem.ocorrenciaFinalizadaEm ? `• ${ordem.ocorrenciaFinalizadaEm}` : ''}
+                  </p>
+                  <p className="text-[11px] text-emerald-800">
+                    Registro enviado ao Livro Ata do {ordem.grupamento}.
+                  </p>
+                  {ordem.relato && (
+                    <p className="text-[11px] text-emerald-900 italic whitespace-pre-wrap">
+                      {ordem.relato}
+                    </p>
+                  )}
+                </div>
+              )}
+
+
+
               {ordem.respondidoPor && (
                 <p className="text-[11px] text-slate-500 font-medium flex items-center gap-1.5">
                   {ordem.status === 'aceita' && (

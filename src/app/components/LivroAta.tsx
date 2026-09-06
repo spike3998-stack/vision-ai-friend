@@ -379,9 +379,15 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
                       {o.descricao}
                     </p>
                     <span className="text-[10px] font-bold text-slate-500 uppercase shrink-0">
-                      {o.status}
+                      {o.ocorrenciaStatus === 'finalizada' ? 'encerrada' : o.status}
                     </span>
                   </div>
+                  {o.ocorrenciaStatus === 'finalizada' && (
+                    <p className="text-[10px] font-black uppercase text-emerald-700">
+                      Ocorrência encerrada
+                      {o.ocorrenciaFinalizadaEm ? ` • ${o.ocorrenciaFinalizadaEm}` : ''}
+                    </p>
+                  )}
                   {ehLivroCiosp && (
                     <span className="inline-block text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-slate-900 text-white">
                       {o.grupamento}

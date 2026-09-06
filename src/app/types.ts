@@ -43,6 +43,7 @@ export interface OrdemServico {
   viaturaPrefixo?: string | undefined;
   ocorrenciaStatus?: 'iniciada' | 'recusada_no_local' | 'finalizada' | undefined;
   ocorrenciaIniciadaEm?: string | undefined;
+  ocorrenciaFinalizadaEm?: string | undefined;
   relato?: string | undefined;
   fotos?: string[] | undefined;
   reboqueAcionado?: boolean | undefined;

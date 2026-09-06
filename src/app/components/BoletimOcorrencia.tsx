@@ -24,6 +24,7 @@ interface BoletimOcorrenciaProps {
   viaturaPrefixo?: string | undefined;
   onVoltar: () => void;
   onOrdemAtualizada: (ordem: OrdemServico) => void;
+  onOcorrenciaEncerrada?: ((ordem: OrdemServico) => void) | undefined;
 }
 
 /** Reduz a foto tirada pela câmera para um tamanho seguro de armazenamento. */
@@ -60,10 +61,13 @@ export const BoletimOcorrencia: React.FC<BoletimOcorrenciaProps> = ({
   viaturaPrefixo,
   onVoltar,
   onOrdemAtualizada,
+  onOcorrenciaEncerrada,
 }) => {
   const [relato, setRelato] = useState<string>(ordem.relato || '');
   const [fotos, setFotos] = useState<string[]>(ordem.fotos || []);
   const [salvando, setSalvando] = useState(false);
+  const [encerrando, setEncerrando] = useState(false);
+  const [confirmandoEncerrar, setConfirmandoEncerrar] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
   const [reboque, setReboque] = useState<boolean>(Boolean(ordem.reboqueAcionado));
   const [escolhendoApoio, setEscolhendoApoio] = useState(false);
@@ -85,6 +89,38 @@ export const BoletimOcorrencia: React.FC<BoletimOcorrenciaProps> = ({
     setSalvando(false);
     setAviso('Boletim salvo com sucesso.');
     window.setTimeout(() => setAviso(null), 3000);
+  };
+
+  const handleEncerrar = async () => {
+    if (!relato.trim()) {
+      setConfirmandoEncerrar(false);
+      setAviso(null);
+      window.alert('Escreva o relato da ocorrência antes de encerrar.');
+      return;
+    }
+    setEncerrando(true);
+    const agora = new Date().toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    const dados: Partial<OrdemServico> = {
+      relato,
+      fotos,
+      ocorrenciaStatus: 'finalizada',
+      ocorrenciaFinalizadaEm: agora,
+      equipe: equipeFinal,
+    };
+    if (prefixo) dados.viaturaPrefixo = prefixo;
+    const atualizada = await atualizarOrdemServidor(ordem.id, dados);
+    const final = (atualizada ?? { ...ordem, ...dados }) as OrdemServico;
+    setEncerrando(false);
+    setConfirmandoEncerrar(false);
+    onOrdemAtualizada(final);
+    if (onOcorrenciaEncerrada) onOcorrenciaEncerrada(final);
+    else onVoltar();
   };
 
   const handleFotos = async (lista: FileList | null) => {
@@ -330,12 +366,49 @@ export const BoletimOcorrencia: React.FC<BoletimOcorrenciaProps> = ({
         <button
           type="button"
           onClick={handleSalvar}
-          disabled={salvando}
+          disabled={salvando || encerrando}
           className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
         >
           <Save className="w-4 h-4" />
           <span>{salvando ? 'Salvando...' : 'Salvar boletim'}</span>
         </button>
+
+        {!confirmandoEncerrar ? (
+          <button
+            type="button"
+            onClick={() => setConfirmandoEncerrar(true)}
+            disabled={salvando || encerrando}
+            className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+          >
+            <Check className="w-4 h-4" />
+            <span>Encerrar ocorrência</span>
+          </button>
+        ) : (
+          <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3 space-y-2">
+            <p className="text-xs font-bold text-emerald-900">
+              Ao encerrar, a ocorrência é finalizada e o registro completo vai para o Livro Ata do{' '}
+              {ordem.grupamento}. Não será mais possível editar este boletim.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleEncerrar}
+                disabled={encerrando}
+                className="flex-1 py-2.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase cursor-pointer disabled:opacity-50"
+              >
+                {encerrando ? 'Encerrando...' : 'Confirmar encerramento'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmandoEncerrar(false)}
+                disabled={encerrando}
+                className="flex-1 py-2.5 px-3 rounded-lg border border-slate-300 bg-white text-slate-700 font-black text-xs uppercase cursor-pointer disabled:opacity-50"
+              >
+                Voltar
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
