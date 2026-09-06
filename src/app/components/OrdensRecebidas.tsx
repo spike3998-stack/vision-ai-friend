@@ -51,6 +51,7 @@ export const OrdensRecebidas: React.FC<OrdensRecebidasProps> = ({
         if (grupo && o.grupamento !== grupo) return false;
         if (o.status === 'recusada') return false;
         if (o.ocorrenciaStatus === 'recusada_no_local') return false;
+        if (o.ocorrenciaStatus === 'finalizada') return false;
         return true;
       })
     );
