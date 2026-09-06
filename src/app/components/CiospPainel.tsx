@@ -198,6 +198,8 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
     const nova = await criarOrdemServidor({
       grupamento,
       endereco: endereco.trim(),
+      latitude: coordenadas?.lat,
+      longitude: coordenadas?.lon,
       descricao: descricao.trim(),
       observacoes: observacoes.trim(),
       criadoPor: usuarioAtivo?.nomeDeGuerra || 'CIOSP',
