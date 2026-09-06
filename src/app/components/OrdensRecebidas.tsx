@@ -148,6 +148,12 @@ export const OrdensRecebidas: React.FC<OrdensRecebidasProps> = ({
           setOrdemBoletim(o);
           atualizarLocal(o);
         }}
+        onOcorrenciaEncerrada={(o) => {
+          setOrdemBoletim(null);
+          setOrdens((prev) => prev.filter((x) => x.id !== o.id));
+          onEncerrarRota?.();
+          carregar();
+        }}
       />
     );
   }
