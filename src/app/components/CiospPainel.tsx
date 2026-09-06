@@ -179,6 +179,8 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
       const atualizada = await atualizarOrdemServidor(editandoId, {
         grupamento,
         endereco: endereco.trim(),
+        latitude: coordenadas?.lat,
+        longitude: coordenadas?.lon,
         descricao: descricao.trim(),
         observacoes: observacoes.trim(),
       });
@@ -562,20 +564,30 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
                   </span>
                 )}
                 {sugestoesEndereco.length > 0 && (
-                  <ul className="absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
+                  <ul className="absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden max-h-64 overflow-y-auto">
                     {sugestoesEndereco.map((s) => (
-                      <li key={s}>
+                      <li key={s.completo}>
                         <button
                           type="button"
                           onClick={() => escolherSugestao(s)}
                           className="w-full text-left px-3 py-2.5 text-xs text-slate-800 hover:bg-blue-50 flex items-start gap-1.5 cursor-pointer"
                         >
                           <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
-                          <span>{s}</span>
+                          <span className="min-w-0">
+                            <span className="block font-bold text-slate-900">{s.titulo}</span>
+                            <span className="block text-[10px] text-slate-500 leading-tight">
+                              {s.detalhe}
+                            </span>
+                          </span>
                         </button>
                       </li>
                     ))}
                   </ul>
+                )}
+                {coordenadas && (
+                  <p className="mt-1 text-[10px] font-bold text-emerald-600 uppercase">
+                    Local confirmado no mapa — rota exata para o motorista
+                  </p>
                 )}
               </div>
 
