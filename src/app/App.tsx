@@ -29,6 +29,8 @@ import { CiospPainel } from './components/CiospPainel';
 import { EquipePainel } from './components/EquipePainel';
 import { LivroAta } from './components/LivroAta';
 import { PadAssinatura } from './components/PadAssinatura';
+import { BannerNotificacoes } from './components/BannerNotificacoes';
+
 
 
 export default function App() {
@@ -615,6 +617,11 @@ export default function App() {
       {/* Main Content Area */}
       <main id="main-area" className="flex-1 flex items-center justify-center p-4 sm:p-6">
         <div className={`w-full ${currentScreen === 'motorista-mapa' || currentScreen === 'ciosp' || currentScreen === 'equipe-ordens' ? 'max-w-4xl' : 'max-w-lg'} transition-all duration-200`}>
+
+          {usuarioAtivo && currentScreen !== 'login' && (
+            <BannerNotificacoes matricula={usuarioAtivo.matricula} />
+          )}
+
 
           {/* ========================================= */}
           {/* TELA 1: LOGIN                             */}
