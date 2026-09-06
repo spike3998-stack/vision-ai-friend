@@ -101,7 +101,9 @@ export const BoletimOcorrencia: React.FC<BoletimOcorrenciaProps> = ({
       return;
     }
     if (!assinatura) {
-      window.alert('Assine o encerramento da ocorrência para finalizar.');
+      window.alert(
+        'Nenhuma assinatura foi encontrada no seu cadastro. Atualize seu cadastro com a assinatura antes de encerrar.'
+      );
       return;
     }
     setEncerrando(true);
