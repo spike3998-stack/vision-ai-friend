@@ -179,6 +179,11 @@ export async function enviarChecklistServidor(chk: ChecklistViatura): Promise<bo
   return Boolean(data?.success);
 }
 
+export async function excluirChecklistServidor(id: string): Promise<boolean> {
+  const data = await chamar<any>({ acao: 'checklists.excluir', id });
+  return Boolean(data?.success);
+}
+
 /** ORDENS DE SERVIÇO (CIOSP) */
 export async function fetchOrdensServidor(): Promise<OrdemServico[]> {
   const data = await chamar<OrdemServico[]>({ acao: 'ordens.listar' });

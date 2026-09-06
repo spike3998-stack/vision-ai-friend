@@ -31,6 +31,9 @@ export interface OrdemServico {
   id: string;
   grupamento: string;
   endereco: string;
+  /** Coordenadas exatas do endereço escolhido na sugestão (evita erro de rota). */
+  latitude?: number | undefined;
+  longitude?: number | undefined;
   descricao: string;
   observacoes?: string | undefined;
   status: StatusOrdemServico;
@@ -136,6 +139,8 @@ export interface OcupantePosto {
   grupamento?: SiglaGrupamento | 'Desenvolvedor' | undefined;
   dataHora: string;
   viaturaPrefixo?: string | undefined;
+  /** Momento (epoch ms) em que o agente assumiu o posto — limite de plantão de 24h. */
+  inicioEm?: number | undefined;
 }
 
 export type MapaOcupacaoPostos = Record<string, OcupantePosto[]>;
