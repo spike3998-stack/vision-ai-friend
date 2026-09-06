@@ -304,7 +304,11 @@ export const OrdensRecebidas: React.FC<OrdensRecebidasProps> = ({
                     <button
                       key={min}
                       type="button"
-                      onClick={() => responderOrdem(ordem, 'espera', min)}
+                      onClick={() => {
+                        setEscolhendoEspera(null);
+                        setTextoMotivo('');
+                        setJustificativa({ ordem, tipo: 'espera', minutos: min });
+                      }}
                       className="py-2.5 rounded-xl border border-slate-300 hover:border-blue-500 hover:bg-blue-50 text-xs font-black text-slate-800 cursor-pointer"
                     >
                       {min} MIN
@@ -326,7 +330,10 @@ export const OrdensRecebidas: React.FC<OrdensRecebidasProps> = ({
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
-                    onClick={() => responderOrdem(ordem, 'recusada')}
+                    onClick={() => {
+                      setTextoMotivo('');
+                      setJustificativa({ ordem, tipo: 'recusada' });
+                    }}
                     className="py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black uppercase flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Ban className="w-3.5 h-3.5" />
@@ -377,7 +384,10 @@ export const OrdensRecebidas: React.FC<OrdensRecebidasProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => recusarNoLocal(ordemChegada)}
+                onClick={() => {
+                  setTextoMotivo('');
+                  setJustificativa({ ordem: ordemChegada, tipo: 'recusada_no_local' });
+                }}
                 className="w-full py-3 rounded-xl border border-rose-300 hover:bg-rose-50 text-rose-700 font-black text-sm uppercase cursor-pointer"
               >
                 Recusar ocorrência
