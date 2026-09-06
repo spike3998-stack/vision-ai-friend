@@ -52,9 +52,33 @@ async function enviarPush(tokens: string[], titulo: string, corpo: string, dados
             token,
             notification: { title: titulo, body: corpo },
             data: dados || {},
+            android: {
+              priority: "HIGH",
+              notification: {
+                sound: "default",
+                default_sound: true,
+                default_vibrate_timings: true,
+                channel_id: "gcm_alertas",
+                notification_priority: "PRIORITY_MAX",
+              },
+            },
+            apns: {
+              headers: { "apns-priority": "10" },
+              payload: { aps: { sound: "default" } },
+            },
+            webpush: {
+              headers: { Urgency: "high" },
+              notification: {
+                icon: "/brasao-arraial-do-cabo.png",
+                badge: "/brasao-arraial-do-cabo.png",
+                vibrate: [200, 100, 200],
+                requireInteraction: true,
+              },
+            },
           },
         }),
       });
+
       if (res.ok) {
         enviados++;
       } else {

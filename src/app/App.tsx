@@ -29,6 +29,8 @@ import { CiospPainel } from './components/CiospPainel';
 import { EquipePainel } from './components/EquipePainel';
 import { LivroAta } from './components/LivroAta';
 import { PadAssinatura } from './components/PadAssinatura';
+import { BannerNotificacoes } from './components/BannerNotificacoes';
+
 
 
 export default function App() {
