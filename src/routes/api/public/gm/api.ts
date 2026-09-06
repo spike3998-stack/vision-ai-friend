@@ -29,6 +29,56 @@ async function getAdmin() {
 
 type Admin = Awaited<ReturnType<typeof getAdmin>>;
 
+const GATEWAY_URL = "https://connector-gateway.lovable.dev/firebase_messaging";
+
+async function enviarPush(tokens: string[], titulo: string, corpo: string, dados?: Record<string, string>) {
+  const lovKey = process.env["LOVABLE_API_KEY"];
+  const connKey = process.env["FIREBASE_MESSAGING_API_KEY"];
+  if (!lovKey || !connKey || tokens.length === 0) return { enviados: 0, falhas: tokens.length };
+
+  let enviados = 0;
+  let falhas = 0;
+  for (const token of tokens) {
+    try {
+      const res = await fetch(`${GATEWAY_URL}/v1/projects/_/messages:send`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${lovKey}`,
+          "X-Connection-Api-Key": connKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: {
+            token,
+            notification: { title: titulo, body: corpo },
+            data: dados || {},
+          },
+        }),
+      });
+      if (res.ok) {
+        enviados++;
+      } else {
+        falhas++;
+        const text = await res.text().catch(() => "");
+        console.warn("[FCM] falha ao enviar para token:", res.status, text);
+      }
+    } catch (err) {
+      falhas++;
+      console.warn("[FCM] erro ao enviar push:", err);
+    }
+  }
+  return { enviados, falhas };
+}
+
+async function tokensPorMatriculas(db: Admin, matriculas: string[]) {
+  if (matriculas.length === 0) return [];
+  const { data } = await db
+    .from("gm_device_tokens")
+    .select("token")
+    .in("matricula", matriculas);
+  return (data ?? []).map((r) => r.token as string);
+}
+
 async function listarUsuarios(db: Admin) {
   const { data } = await db.from("gm_usuarios").select("dados").order("criado_em");
   return (data ?? []).map((r) => r.dados as Record<string, unknown>);
