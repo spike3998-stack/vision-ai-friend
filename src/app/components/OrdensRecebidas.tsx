@@ -39,6 +39,13 @@ export const OrdensRecebidas: React.FC<OrdensRecebidasProps> = ({
 }) => {
   const [ordens, setOrdens] = useState<OrdemServico[]>([]);
   const [escolhendoEspera, setEscolhendoEspera] = useState<string | null>(null);
+  /** Pop-up para justificar a recusa ou a espera antes de responder ao CIOSP. */
+  const [justificativa, setJustificativa] = useState<{
+    ordem: OrdemServico;
+    tipo: 'recusada' | 'espera' | 'recusada_no_local';
+    minutos?: number | undefined;
+  } | null>(null);
+  const [textoMotivo, setTextoMotivo] = useState('');
   const [ordemChegada, setOrdemChegada] = useState<OrdemServico | null>(null);
   const [ordemBoletim, setOrdemBoletim] = useState<OrdemServico | null>(null);
   const [, forcarRelogio] = useState(0);
