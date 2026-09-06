@@ -456,6 +456,81 @@ async function handle(body: any) {
       return json({ success: true, ...resultado });
     }
 
+    // ---------------- RÁDIO / CHAT ----------------
+    case "chat.listar": {
+      const canal = String(body.canal ?? "");
+      if (!canal) return json({ error: "Canal é obrigatório." }, 400);
+      const { data } = await db
+        .from("gm_chat_mensagens")
+        .select("dados, criado_em")
+        .eq("canal", canal)
+        .order("criado_em", { ascending: false })
+        .limit(200);
+      const lista = (data ?? [])
+        .map((r) => ({ ...(r.dados as Record<string, unknown>), criadoEm: r.criado_em }))
+        .reverse();
+      return json(lista);
+    }
+
+    case "chat.enviar": {
+      const canal = String(body.canal ?? "");
+      const m = body.mensagem ?? {};
+      if (!canal || !m.autorMatricula || (!m.texto && !m.audio)) {
+        return json({ error: "Canal, autor e conteúdo são obrigatórios." }, 400);
+      }
+      const id = m.id || `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const mensagem = {
+        ...m,
+        id,
+        canal,
+        autorMatricula: String(m.autorMatricula),
+        dataHora: m.dataHora || agora(),
+      };
+      await db.from("gm_chat_mensagens").insert({
+        id,
+        canal,
+        autor_matricula: mensagem.autorMatricula,
+        dados: mensagem,
+      });
+
+      // Avisa os destinatários no aparelho
+      try {
+        const usuarios = await listarUsuarios(db);
+        let destinos: string[] = [];
+        if (canal === "geral") {
+          destinos = usuarios.map((u) => String(u["matricula"] ?? ""));
+        } else if (canal.startsWith("grupamento:")) {
+          const sigla = canal.slice("grupamento:".length);
+          destinos = usuarios
+            .filter((u) => String(u["grupamento"] ?? "") === sigla)
+            .map((u) => String(u["matricula"] ?? ""));
+        } else if (canal.startsWith("dm:")) {
+          destinos = canal.slice(3).split("|");
+        }
+        destinos = destinos.filter((mt) => mt && mt !== mensagem.autorMatricula);
+        if (destinos.length > 0) {
+          const rotulo =
+            canal === "geral"
+              ? "Rádio • Chat geral"
+              : canal.startsWith("grupamento:")
+                ? `Rádio • ${canal.slice("grupamento:".length)}`
+                : "Rádio • Mensagem particular";
+          await enviarPush(
+            await tokensPorMatriculas(db, destinos),
+            rotulo,
+            `${mensagem.autorNome || mensagem.autorMatricula}: ${
+              mensagem.audio ? "enviou um áudio" : String(mensagem.texto).slice(0, 120)
+            }`,
+            { tipo: "chat", canal },
+          );
+        }
+      } catch (err) {
+        console.warn("[Chat] falha ao notificar:", err);
+      }
+
+      return json({ success: true, mensagem });
+    }
+
     default:
       return json({ error: `Ação desconhecida: ${acao}` }, 400);
   }
