@@ -115,6 +115,27 @@ export const EquipePainel: React.FC<EquipePainelProps> = ({
         <span>{prefixoAtivo ? `Viatura: ${prefixoAtivo}` : 'Escolher viatura'}</span>
       </button>
 
+      {/* PATRULHAMENTO */}
+      <button
+        type="button"
+        onClick={() => setModalPatrulhamento(true)}
+        className="w-full py-3 px-4 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+      >
+        <Footprints className="w-4 h-4 text-emerald-600" />
+        <span>Patrulhamento</span>
+      </button>
+
+      {modalPatrulhamento && (
+        <ModalPatrulhamento
+          usuarioAtivo={usuarioAtivo}
+          posto={posto}
+          equipe={equipe}
+          viaturaPrefixo={prefixoAtivo || undefined}
+          onFechar={() => setModalPatrulhamento(false)}
+        />
+      )}
+
+
       {modalViaturas && (
         <div className="fixed inset-0 z-50 bg-slate-900/70 flex items-end sm:items-center justify-center p-3">
           <div className="bg-white w-full max-w-lg rounded-2xl overflow-hidden max-h-[85vh] flex flex-col">
