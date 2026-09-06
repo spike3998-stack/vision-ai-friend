@@ -378,8 +378,41 @@ export const MotoristaLocalizacao: React.FC<MotoristaLocalizacaoProps> = ({
     rotaLayerRef.current = null;
     destinoMarkerRef.current = null;
     setRotaInfo(null);
+    rotaOrdemIdRef.current = null;
     setAutoCenter(true);
   };
+
+  // Rota automática: quando qualquer membro da equipe (operacional/coordenador)
+  // aceita uma ordem do CIOSP, o mapa do motorista traça a rota sozinho.
+  const rotaOrdemIdRef = useRef<string | null>(null);
+  const tracarRotaRef = useRef(traçarRota);
+  tracarRotaRef.current = traçarRota;
+
+  useEffect(() => {
+    const grupo = usuarioAtivo?.grupamento;
+    const verificar = async () => {
+      const lista = await fetchOrdensServidor();
+      const ativa = lista.find(
+        (o) =>
+          o.status === 'aceita' &&
+          o.ocorrenciaStatus !== 'recusada_no_local' &&
+          o.ocorrenciaStatus !== 'finalizada' &&
+          (!grupo || o.grupamento === grupo)
+      );
+      if (ativa) {
+        if (rotaOrdemIdRef.current !== ativa.id) {
+          rotaOrdemIdRef.current = ativa.id;
+          void tracarRotaRef.current(ativa);
+        }
+      } else if (rotaOrdemIdRef.current) {
+        limparRota();
+      }
+    };
+    const t = window.setInterval(verificar, 6000);
+    void verificar();
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usuarioAtivo?.grupamento]);
 
   // Brasão do grupamento do usuário
   const grupamentoUsuario = GRUPAMENTOS.find((g) => g.sigla === usuarioAtivo?.grupamento) || GRUPAMENTOS[0];
