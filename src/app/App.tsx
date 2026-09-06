@@ -153,6 +153,11 @@ export default function App() {
   const [cadAssinatura, setCadAssinatura] = useState<string | null>(null);
   const [viaturaAtivaPrefixo, setViaturaAtivaPrefixo] = useState<string | null>(null);
 
+  // Encerramento de plantão (fechamento do livro) e limite de 24h no posto
+  const [modalEncerrarPlantao, setModalEncerrarPlantao] = useState(false);
+  const [gerandoLivroPlantao, setGerandoLivroPlantao] = useState(false);
+  const [avisoPlantao24h, setAvisoPlantao24h] = useState(false);
+
   // Estado para Edição do Próprio Perfil
   const [modalEditarPerfilAberto, setModalEditarPerfilAberto] = useState(false);
   const [editPerfilNomeDeGuerra, setEditPerfilNomeDeGuerra] = useState('');
