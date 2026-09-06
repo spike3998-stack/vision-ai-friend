@@ -448,8 +448,20 @@ export function LivroAta({
                     <p className="text-xs font-black text-slate-800 uppercase truncate">
                       {o.descricao}
                     </p>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase shrink-0">
-                      {o.ocorrenciaStatus === 'finalizada' ? 'encerrada' : o.status}
+                    <span className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">
+                        {o.ocorrenciaStatus === 'finalizada' ? 'encerrada' : o.status}
+                      </span>
+                      {ehDesenvolvedor && (
+                        <button
+                          type="button"
+                          onClick={() => void excluirOrdem(o.id)}
+                          className="p-1 rounded-md text-rose-500 hover:bg-rose-50 cursor-pointer"
+                          aria-label="Apagar registro"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </span>
                   </div>
                   {o.ocorrenciaStatus === 'finalizada' && (
