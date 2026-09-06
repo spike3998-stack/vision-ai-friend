@@ -494,6 +494,23 @@ export default function App() {
     setModalEncerrarPlantao(true);
   };
 
+  // Limite de 24 horas no posto de serviço: passou disso, o posto é liberado automaticamente.
+  useEffect(() => {
+    if (!inicioPlantao || !funcaoSelecionada) return;
+    const LIMITE = 24 * 60 * 60 * 1000;
+    const verificar = () => {
+      if (Date.now() - inicioPlantao >= LIMITE) {
+        setAvisoPlantao24h(true);
+        setModalEncerrarPlantao(false);
+        liberarPostoAtual();
+      }
+    };
+    verificar();
+    const t = window.setInterval(verificar, 60000);
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inicioPlantao, funcaoSelecionada]);
+
   /** Fecha o livro do plantão: gera o PDF do dia com a assinatura do coordenador no final. */
   const fecharLivroDoPlantao = async () => {
     if (!usuarioAtivo || gerandoLivroPlantao) return;
@@ -1756,7 +1773,12 @@ export default function App() {
           {/* ========================================= */}
           {currentScreen === 'livro-ata' && (
             <div id="screen-livro-ata">
-              <LivroAta usuarioAtivo={usuarioAtivo} onVoltar={() => setCurrentScreen('menu')} />
+              <LivroAta
+                usuarioAtivo={usuarioAtivo}
+                onVoltar={() => setCurrentScreen('menu')}
+                postoAtual={funcaoSelecionada}
+                inicioPlantao={inicioPlantao}
+              />
             </div>
           )}
 
