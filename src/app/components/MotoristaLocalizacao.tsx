@@ -39,6 +39,7 @@ interface MotoristaLocalizacaoProps {
   ocupantesPosto: OcupantePosto[];
   viaturas?: Viatura[];
   equipe: MembroEquipe[];
+  onViaturaSelecionada?: ((prefixo: string | null) => void) | undefined;
   onTrocarPosto: () => void;
   onDesocuparPosto: () => void;
   onVoltarMenu: () => void;
@@ -56,6 +57,7 @@ export const MotoristaLocalizacao: React.FC<MotoristaLocalizacaoProps> = ({
   ocupantesPosto,
   viaturas,
   equipe,
+  onViaturaSelecionada,
   onTrocarPosto,
   onDesocuparPosto,
   onVoltarMenu,
@@ -75,13 +77,20 @@ export const MotoristaLocalizacao: React.FC<MotoristaLocalizacaoProps> = ({
     return null;
   });
 
+  useEffect(() => {
+    if (viaturaSelecionada) onViaturaSelecionada?.(viaturaSelecionada.prefixo);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleSelecionarViatura = (vtr: Viatura) => {
     if (viaturaSelecionada?.id === vtr.id) {
       setViaturaSelecionada(null);
       localStorage.removeItem('gm_arraial_viatura_ativa');
+      onViaturaSelecionada?.(null);
     } else {
       setViaturaSelecionada(vtr);
       localStorage.setItem('gm_arraial_viatura_ativa', JSON.stringify(vtr));
+      onViaturaSelecionada?.(vtr.prefixo);
     }
   };
 
@@ -858,6 +867,7 @@ export const MotoristaLocalizacao: React.FC<MotoristaLocalizacaoProps> = ({
                           onClick={() => {
                             setViaturaSelecionada(vtr);
                             localStorage.setItem('gm_arraial_viatura_ativa', JSON.stringify(vtr));
+                            onViaturaSelecionada?.(vtr.prefixo);
                             setModalViaturasAberto(false);
                             setModalChecklistAberto(true);
                           }}
