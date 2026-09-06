@@ -148,6 +148,8 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
   const limparFormulario = () => {
     setGrupamento('');
     setEndereco('');
+    setCoordenadas(null);
+    setSugestoesEndereco([]);
     setDescricao('');
     setObservacoes('');
     setErro(null);
@@ -158,6 +160,11 @@ export const CiospPainel: React.FC<CiospPainelProps> = ({
     setEditandoId(ordem.id);
     setGrupamento(ordem.grupamento);
     setEndereco(ordem.endereco);
+    setCoordenadas(
+      typeof ordem.latitude === 'number' && typeof ordem.longitude === 'number'
+        ? { lat: ordem.latitude, lon: ordem.longitude }
+        : null,
+    );
     setDescricao(ordem.descricao);
     setObservacoes(ordem.observacoes || '');
     setErro(null);
