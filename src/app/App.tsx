@@ -616,6 +616,11 @@ export default function App() {
       <main id="main-area" className="flex-1 flex items-center justify-center p-4 sm:p-6">
         <div className={`w-full ${currentScreen === 'motorista-mapa' || currentScreen === 'ciosp' || currentScreen === 'equipe-ordens' ? 'max-w-4xl' : 'max-w-lg'} transition-all duration-200`}>
 
+          {usuarioAtivo && currentScreen !== 'login' && (
+            <BannerNotificacoes matricula={usuarioAtivo.matricula} />
+          )}
+
+
           {/* ========================================= */}
           {/* TELA 1: LOGIN                             */}
           {/* ========================================= */}
