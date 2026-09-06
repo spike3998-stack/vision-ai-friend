@@ -1054,6 +1054,52 @@ export default function App() {
           )}
 
           {/* ========================================= */}
+          {/* TELA: ASSINATURA DIGITAL DO CADASTRO      */}
+          {/* ========================================= */}
+          {currentScreen === 'assinatura' && (
+            <div id="card-assinatura" className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 sm:p-7 space-y-4">
+              <div className="text-center">
+                <span className="text-xs font-black text-blue-600 uppercase tracking-widest block mb-1">
+                  Etapa final do cadastro
+                </span>
+                <h2 className="text-xl font-black text-slate-900 uppercase">Assinatura do Agente</h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Esta assinatura será usada nos registros do Livro Ata sempre que você finalizar
+                  uma ocorrência.
+                </p>
+              </div>
+
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-700">
+                <strong className="uppercase text-[10px] block text-slate-500">Agente</strong>
+                {cadNomeDeGuerra.toUpperCase() || '---'} • Matrícula {cadMatricula || '---'}
+              </div>
+
+              <PadAssinatura onChange={(dataUrl) => setCadAssinatura(dataUrl)} />
+
+              <button
+                type="button"
+                disabled={!cadAssinatura}
+                onClick={() => {
+                  if (cadAssinatura) finalizarCadastroComAssinatura(cadAssinatura);
+                }}
+                className="w-full py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-base uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <CheckCircle2 className="w-5 h-5" />
+                <span>CONFIRMAR ASSINATURA E CADASTRAR</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCurrentScreen('cadastrar')}
+                className="w-full py-3 px-4 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-sm uppercase flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>VOLTAR AO FORMULÁRIO</span>
+              </button>
+            </div>
+          )}
+
+          {/* ========================================= */}
           {/* TELAS EXCLUSIVAS DO DESENVOLVEDOR (67549) */}
           {/* ========================================= */}
           {currentScreen === 'dev-menu' && (
