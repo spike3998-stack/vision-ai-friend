@@ -308,6 +308,7 @@ export default function App() {
 
     // Envia ao servidor centralizado (assim aparece imediatamente para o desenvolvedor)
     await cadastrarUsuarioServidor(novoUsuario);
+    registrarPush(novoUsuario.matricula);
 
     if (isDev) {
       setUsuarioAtivo(novoUsuario);
