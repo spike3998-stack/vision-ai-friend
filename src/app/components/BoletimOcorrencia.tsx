@@ -16,6 +16,7 @@ import {
 import { OrdemServico, UsuarioCadastrado, MembroEquipe } from '../types';
 import { GRUPAMENTOS } from '../data/grupamentos';
 import { atualizarOrdemServidor, criarOrdemServidor } from '../services/api';
+import { PadAssinatura } from './PadAssinatura';
 
 interface BoletimOcorrenciaProps {
   ordem: OrdemServico;
@@ -69,6 +70,7 @@ export const BoletimOcorrencia: React.FC<BoletimOcorrenciaProps> = ({
   const [encerrando, setEncerrando] = useState(false);
   const [confirmandoEncerrar, setConfirmandoEncerrar] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [assinatura, setAssinatura] = useState<string | null>(usuarioAtivo?.assinatura || null);
   const [reboque, setReboque] = useState<boolean>(Boolean(ordem.reboqueAcionado));
   const [escolhendoApoio, setEscolhendoApoio] = useState(false);
   const [apoioEnviado, setApoioEnviado] = useState<string | null>(ordem.apoioGrupamento || null);
@@ -98,6 +100,10 @@ export const BoletimOcorrencia: React.FC<BoletimOcorrenciaProps> = ({
       window.alert('Escreva o relato da ocorrência antes de encerrar.');
       return;
     }
+    if (!assinatura) {
+      window.alert('Assine o encerramento da ocorrência para finalizar.');
+      return;
+    }
     setEncerrando(true);
     const agora = new Date().toLocaleString('pt-BR', {
       day: '2-digit',
@@ -112,7 +118,16 @@ export const BoletimOcorrencia: React.FC<BoletimOcorrenciaProps> = ({
       ocorrenciaStatus: 'finalizada',
       ocorrenciaFinalizadaEm: agora,
       equipe: equipeFinal,
+      finalizadoPor: usuarioAtivo?.nomeDeGuerra || 'AGENTE',
+      finalizadoPorMatricula: usuarioAtivo?.matricula || '---',
+      assinaturaFinalizacao: assinatura,
     };
+    const coordenador = equipeFinal.find((m) => m.posto === 'COORDENADOR DE EQUIPE');
+    if (coordenador) {
+      dados.coordenadorNome = coordenador.nomeDeGuerra;
+      dados.coordenadorMatricula = coordenador.matricula;
+      if (coordenador.assinatura) dados.assinaturaCoordenador = coordenador.assinatura;
+    }
     if (prefixo) dados.viaturaPrefixo = prefixo;
     const atualizada = await atualizarOrdemServidor(ordem.id, dados);
     const final = (atualizada ?? { ...ordem, ...dados }) as OrdemServico;
@@ -389,6 +404,16 @@ export const BoletimOcorrencia: React.FC<BoletimOcorrenciaProps> = ({
               Ao encerrar, a ocorrência é finalizada e o registro completo vai para o Livro Ata do{' '}
               {ordem.grupamento}. Não será mais possível editar este boletim.
             </p>
+            <div className="bg-white rounded-xl border border-emerald-200 p-3 space-y-2">
+              <p className="text-[11px] font-black uppercase text-slate-700">
+                Assinatura de quem está finalizando ({usuarioAtivo?.nomeDeGuerra || 'AGENTE'})
+              </p>
+              <PadAssinatura
+                valorInicial={usuarioAtivo?.assinatura}
+                altura={140}
+                onChange={(v) => setAssinatura(v)}
+              />
+            </div>
             <div className="flex gap-2">
               <button
                 type="button"
