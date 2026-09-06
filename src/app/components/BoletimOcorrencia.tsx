@@ -24,6 +24,7 @@ interface BoletimOcorrenciaProps {
   viaturaPrefixo?: string | undefined;
   onVoltar: () => void;
   onOrdemAtualizada: (ordem: OrdemServico) => void;
+  onOcorrenciaEncerrada?: ((ordem: OrdemServico) => void) | undefined;
 }
 
 /** Reduz a foto tirada pela câmera para um tamanho seguro de armazenamento. */
