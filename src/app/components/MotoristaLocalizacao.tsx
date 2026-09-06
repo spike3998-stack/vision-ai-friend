@@ -29,6 +29,7 @@ import {
 import { UsuarioCadastrado, OcupantePosto, Viatura, OrdemServico, MembroEquipe } from '../types';
 import { GRUPAMENTOS } from '../data/grupamentos';
 import { getViaturasArmazenadas } from '../services/storage';
+import { fetchOrdensServidor } from '../services/api';
 import { ModalChecklistViatura } from './ModalChecklistViatura';
 import { OrdensRecebidas } from './OrdensRecebidas';
 
