@@ -16,7 +16,6 @@ import {
 import { OrdemServico, UsuarioCadastrado, MembroEquipe } from '../types';
 import { GRUPAMENTOS } from '../data/grupamentos';
 import { atualizarOrdemServidor, criarOrdemServidor } from '../services/api';
-import { PadAssinatura } from './PadAssinatura';
 
 interface BoletimOcorrenciaProps {
   ordem: OrdemServico;
