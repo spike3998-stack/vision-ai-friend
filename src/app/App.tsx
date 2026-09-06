@@ -2182,6 +2182,70 @@ export default function App() {
         onCancelar={() => setImagemParaCortarCadastro(null)}
       />
 
+      {/* MODAL: encerramento de plantão e fechamento do livro */}
+      {modalEncerrarPlantao && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-5 space-y-4">
+            <h3 className="text-base font-black text-slate-900 uppercase">Encerrar plantão</h3>
+            <p className="text-xs text-slate-600">
+              Ao encerrar, o posto fica livre. Você pode fechar o livro do plantão de hoje: o
+              documento é gerado com todos os registros do dia e a assinatura do coordenador de
+              equipe no final.
+            </p>
+            <div className="space-y-2">
+              <button
+                type="button"
+                disabled={gerandoLivroPlantao}
+                onClick={() => void fecharLivroDoPlantao()}
+                className="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm uppercase cursor-pointer disabled:opacity-60"
+              >
+                {gerandoLivroPlantao ? 'Fechando livro...' : 'Fechar livro e encerrar'}
+              </button>
+              <button
+                type="button"
+                disabled={gerandoLivroPlantao}
+                onClick={() => {
+                  setModalEncerrarPlantao(false);
+                  liberarPostoAtual();
+                }}
+                className="w-full py-3 px-4 rounded-xl border border-rose-300 hover:bg-rose-50 text-rose-700 font-bold text-sm uppercase cursor-pointer disabled:opacity-60"
+              >
+                Só liberar o posto
+              </button>
+              <button
+                type="button"
+                disabled={gerandoLivroPlantao}
+                onClick={() => setModalEncerrarPlantao(false)}
+                className="w-full py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm uppercase cursor-pointer"
+              >
+                Voltar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AVISO: plantão de 24 horas encerrado automaticamente */}
+      {avisoPlantao24h && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-5 space-y-4 text-center">
+            <AlertCircle className="w-10 h-10 text-amber-500 mx-auto" />
+            <h3 className="text-base font-black text-slate-900 uppercase">Plantão encerrado</h3>
+            <p className="text-xs text-slate-600">
+              Seu posto de serviço ficou ocupado por 24 horas e foi liberado automaticamente.
+              Assuma o posto novamente para iniciar um novo plantão.
+            </p>
+            <button
+              type="button"
+              onClick={() => setAvisoPlantao24h(false)}
+              className="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm uppercase cursor-pointer"
+            >
+              Entendi
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
       <footer id="footer-bottom" className="border-t border-slate-200 bg-white py-3 px-4 text-center text-xs text-slate-500">
         <p>© Guarda Municipal • Prefeitura de Arraial do Cabo - RJ</p>
