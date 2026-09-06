@@ -10,11 +10,15 @@ import {
   CalendarDays,
   RefreshCw,
   Radio,
+  Download,
+  X,
+  FileText,
 } from 'lucide-react';
 
 import { ChecklistViatura, OrdemServico, UsuarioCadastrado } from '../types';
 import { GRUPAMENTOS, MATRICULA_DESENVOLVEDOR } from '../data/grupamentos';
 import { fetchOrdensServidor, fetchChecklistsServidor } from '../services/api';
+import { gerarLivroAtaPdf } from '../services/livroAtaPdf';
 
 interface LivroAtaProps {
   usuarioAtivo: UsuarioCadastrado | null;
@@ -55,6 +59,8 @@ export function LivroAta({ usuarioAtivo, onVoltar }: LivroAtaProps) {
   const [ordens, setOrdens] = useState<OrdemServico[]>([]);
   const [checklists, setChecklists] = useState<ChecklistViatura[]>([]);
   const [carregando, setCarregando] = useState(false);
+  const [modalDownload, setModalDownload] = useState(false);
+  const [gerandoPdf, setGerandoPdf] = useState(false);
 
   const carregar = async () => {
     setCarregando(true);
