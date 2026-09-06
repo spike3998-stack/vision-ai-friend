@@ -120,6 +120,7 @@ export async function gerarLivroAtaPdf({
     doc.text('Nenhuma ocorrência registrada nesta data.', margem, y + 5);
     y += 12;
   } else {
+    const assinaturas = ordens.map((o) => o.assinaturaFinalizacao || null);
     const linhas = ordens.map((o, i) => [
       String(i + 1),
       apenasHora(o.dataHora),
@@ -132,20 +133,39 @@ export async function gerarLivroAtaPdf({
           ? o.respondidoPor.toUpperCase()
           : 'PLANTÃO',
       `${o.status.toUpperCase()}${o.viaturaPrefixo ? `\nVTR: ${o.viaturaPrefixo}` : ''}${o.reboqueAcionado ? '\nREBOQUE ACIONADO' : ''}${o.relato ? `\nRELATO: ${o.relato}` : ''}${o.fotos?.length ? `\n${o.fotos.length} foto(s)` : ''}`,
+      o.finalizadoPor ? `${o.finalizadoPor.toUpperCase()}\nMAT. ${o.finalizadoPorMatricula || '---'}` : '',
     ]);
     autoTable(doc, {
       startY: y,
       margin: { left: margem, right: margem },
-      head: [['#', 'HORÁRIO', 'DATA', 'NATUREZA / TIPO', 'ENDEREÇO / LOCAL', 'EQUIPE', 'DETALHES / REGISTRO']],
+      head: [['#', 'HORÁRIO', 'DATA', 'NATUREZA / TIPO', 'ENDEREÇO / LOCAL', 'EQUIPE', 'DETALHES / REGISTRO', 'ASSINATURA']],
       body: linhas,
       styles: { fontSize: 7, cellPadding: 1.6, overflow: 'linebreak' },
       headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold', fontSize: 7 },
       alternateRowStyles: { fillColor: [241, 245, 249] },
       columnStyles: {
         0: { cellWidth: 8 },
-        1: { cellWidth: 14 },
-        2: { cellWidth: 18 },
-        5: { cellWidth: 28 },
+        1: { cellWidth: 13 },
+        2: { cellWidth: 16 },
+        5: { cellWidth: 24 },
+        7: { cellWidth: 30, minCellHeight: 18, valign: 'bottom', halign: 'center', fontSize: 6 },
+      },
+      didDrawCell: (dados: any) => {
+        if (dados.section !== 'body' || dados.column.index !== 7) return;
+        const img = assinaturas[dados.row.index];
+        if (!img) return;
+        try {
+          doc.addImage(
+            img,
+            'PNG',
+            dados.cell.x + 2,
+            dados.cell.y + 1,
+            dados.cell.width - 4,
+            Math.min(12, dados.cell.height - 6),
+          );
+        } catch {
+          /* assinatura indisponível */
+        }
       },
     });
     y = (doc as any).lastAutoTable.finalY + 8;
@@ -195,17 +215,28 @@ export async function gerarLivroAtaPdf({
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.text(`ARRAIAL DO CABO R.J. DATA: ${data}`, margem, y);
-  y += 16;
+  y += 6;
+
+  // Assinatura do COORDENADOR DE EQUIPE do plantão
+  const comCoordenador = [...ordens].reverse().find((o) => o.assinaturaCoordenador);
+  const coordNome = comCoordenador?.coordenadorNome || usuario?.nomeDeGuerra || 'RESPONSÁVEL';
+  const coordMat = comCoordenador?.coordenadorMatricula || usuario?.matricula || '---';
+  if (comCoordenador?.assinaturaCoordenador) {
+    try {
+      doc.addImage(comCoordenador.assinaturaCoordenador, 'PNG', largura / 2 - 30, y, 60, 18);
+    } catch {
+      /* assinatura indisponível */
+    }
+  }
+  y += 20;
   doc.line(largura / 2 - 40, y, largura / 2 + 40, y);
   y += 5;
   doc.setFont('helvetica', 'bold');
-  doc.text((usuario?.nomeDeGuerra || 'RESPONSÁVEL').toUpperCase(), largura / 2, y, {
-    align: 'center',
-  });
+  doc.text(coordNome.toUpperCase(), largura / 2, y, { align: 'center' });
   y += 5;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.text(`GCM ${sigla} — MAT. ${usuario?.matricula || '---'}`, largura / 2, y, {
+  doc.text(`COORDENADOR DE EQUIPE — GCM ${sigla} — MAT. ${coordMat}`, largura / 2, y, {
     align: 'center',
   });
 

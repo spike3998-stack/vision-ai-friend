@@ -27,6 +27,7 @@ import { MotoristaLocalizacao } from './components/MotoristaLocalizacao';
 import { CiospPainel } from './components/CiospPainel';
 import { EquipePainel } from './components/EquipePainel';
 import { LivroAta } from './components/LivroAta';
+import { PadAssinatura } from './components/PadAssinatura';
 
 
 export default function App() {
@@ -125,6 +126,8 @@ export default function App() {
   const cadFileInputRef = useRef<HTMLInputElement | null>(null);
   const [cadSenha, setCadSenha] = useState('');
   const [cadSuccessMsg, setCadSuccessMsg] = useState<string | null>(null);
+  const [cadAssinatura, setCadAssinatura] = useState<string | null>(null);
+  const [viaturaAtivaPrefixo, setViaturaAtivaPrefixo] = useState<string | null>(null);
 
   // Estado para Edição do Próprio Perfil
   const [modalEditarPerfilAberto, setModalEditarPerfilAberto] = useState(false);
@@ -256,6 +259,11 @@ export default function App() {
       return;
     }
 
+    // Última etapa do cadastro: coleta da assinatura do agente
+    setCurrentScreen('assinatura');
+  };
+
+  const finalizarCadastroComAssinatura = async (assinatura: string) => {
     const mat = cadMatricula.trim();
     const isDev = mat === MATRICULA_DESENVOLVEDOR;
 
@@ -267,6 +275,7 @@ export default function App() {
       tipoSanguineo: cadTipoSanguineo.trim().toUpperCase(),
       grupamento: cadGrupamento,
       foto: cadFoto,
+      assinatura,
       senha: cadSenha,
       status: isDev ? 'autorizado' : 'pendente',
       isDesenvolvedor: isDev,
@@ -293,6 +302,7 @@ export default function App() {
 
     setLoginIdentificador(mat);
     setPassword('');
+    setCadAssinatura(null);
     setCurrentScreen('login');
   };
 
@@ -384,13 +394,40 @@ export default function App() {
   const equipeDaViatura: MembroEquipe[] = POSTOS_EMBARCADOS.flatMap((posto) =>
     (ocupacaoPostos[posto] || [])
       .filter((oc) => !usuarioAtivo?.grupamento || !oc.grupamento || oc.grupamento === usuarioAtivo.grupamento || oc.grupamento === 'Desenvolvedor')
-      .map((oc) => ({
-        nomeDeGuerra: oc.nomeDeGuerra,
-        matricula: oc.matricula,
-        posto,
-        grupamento: oc.grupamento,
-      }))
+      // Reconhecimento da VTR: só entra na equipe quem está na MESMA viatura
+      .filter((oc) => !viaturaAtivaPrefixo || oc.viaturaPrefixo === viaturaAtivaPrefixo)
+      .map((oc) => {
+        const cadastro = usuarios.find((u) => u.matricula === oc.matricula);
+        const membro: MembroEquipe = {
+          nomeDeGuerra: oc.nomeDeGuerra,
+          matricula: oc.matricula,
+          posto,
+          grupamento: oc.grupamento,
+        };
+        if (cadastro?.assinatura) membro.assinatura = cadastro.assinatura;
+        if (oc.viaturaPrefixo) membro.viaturaPrefixo = oc.viaturaPrefixo;
+        return membro;
+      })
   );
+
+  /** Registra no posto de serviço qual viatura o agente assumiu (reconhecimento de VTR). */
+  const handleDefinirViatura = (prefixo: string | null) => {
+    setViaturaAtivaPrefixo(prefixo);
+    if (!usuarioAtivo || !funcaoSelecionada) return;
+    const novoMapa: MapaOcupacaoPostos = { ...ocupacaoPostos };
+    let ocupanteAtualizado: OcupantePosto | null = null;
+    novoMapa[funcaoSelecionada] = (novoMapa[funcaoSelecionada] || []).map((o) => {
+      if (o.matricula !== usuarioAtivo.matricula) return o;
+      const atualizado: OcupantePosto = { ...o };
+      if (prefixo) atualizado.viaturaPrefixo = prefixo;
+      else delete atualizado.viaturaPrefixo;
+      ocupanteAtualizado = atualizado;
+      return atualizado;
+    });
+    setOcupacaoPostos(novoMapa);
+    salvarOcupacaoPostos(novoMapa);
+    if (ocupanteAtualizado) ocuparPostoServidor(funcaoSelecionada, ocupanteAtualizado);
+  };
 
   const handleDesocuparPosto = () => {
     if (!usuarioAtivo) return;
@@ -1017,6 +1054,52 @@ export default function App() {
           )}
 
           {/* ========================================= */}
+          {/* TELA: ASSINATURA DIGITAL DO CADASTRO      */}
+          {/* ========================================= */}
+          {currentScreen === 'assinatura' && (
+            <div id="card-assinatura" className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 sm:p-7 space-y-4">
+              <div className="text-center">
+                <span className="text-xs font-black text-blue-600 uppercase tracking-widest block mb-1">
+                  Etapa final do cadastro
+                </span>
+                <h2 className="text-xl font-black text-slate-900 uppercase">Assinatura do Agente</h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Esta assinatura será usada nos registros do Livro Ata sempre que você finalizar
+                  uma ocorrência.
+                </p>
+              </div>
+
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-700">
+                <strong className="uppercase text-[10px] block text-slate-500">Agente</strong>
+                {cadNomeDeGuerra.toUpperCase() || '---'} • Matrícula {cadMatricula || '---'}
+              </div>
+
+              <PadAssinatura onChange={(dataUrl) => setCadAssinatura(dataUrl)} />
+
+              <button
+                type="button"
+                disabled={!cadAssinatura}
+                onClick={() => {
+                  if (cadAssinatura) finalizarCadastroComAssinatura(cadAssinatura);
+                }}
+                className="w-full py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-base uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <CheckCircle2 className="w-5 h-5" />
+                <span>CONFIRMAR ASSINATURA E CADASTRAR</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCurrentScreen('cadastrar')}
+                className="w-full py-3 px-4 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-sm uppercase flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>VOLTAR AO FORMULÁRIO</span>
+              </button>
+            </div>
+          )}
+
+          {/* ========================================= */}
           {/* TELAS EXCLUSIVAS DO DESENVOLVEDOR (67549) */}
           {/* ========================================= */}
           {currentScreen === 'dev-menu' && (
@@ -1468,6 +1551,7 @@ export default function App() {
               ocupantesPosto={ocupacaoPostos['MOTORISTA'] || []}
               viaturas={viaturas}
               equipe={equipeDaViatura}
+              onViaturaSelecionada={handleDefinirViatura}
               onTrocarPosto={() => setCurrentScreen('posto-servico')}
               onDesocuparPosto={handleDesocuparPosto}
               onVoltarMenu={() => setCurrentScreen('menu')}
@@ -1483,6 +1567,9 @@ export default function App() {
               posto={funcaoSelecionada || 'OPERACIONAL'}
               ocupantesPosto={ocupacaoPostos[funcaoSelecionada || 'OPERACIONAL'] || []}
               equipe={equipeDaViatura}
+              viaturas={viaturas}
+              viaturaPrefixo={viaturaAtivaPrefixo || undefined}
+              onViaturaSelecionada={handleDefinirViatura}
               onTrocarPosto={() => setCurrentScreen('posto-servico')}
               onDesocuparPosto={handleDesocuparPosto}
               onVoltarMenu={() => setCurrentScreen('menu')}

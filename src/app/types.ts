@@ -1,6 +1,7 @@
 export type Screen =
   | 'login'
   | 'cadastrar'
+  | 'assinatura'
   | 'menu'
   | 'posto-servico'
   | 'opcao-funcao'
@@ -22,6 +23,8 @@ export interface MembroEquipe {
   matricula: string;
   posto: string;
   grupamento?: string | undefined;
+  assinatura?: string | undefined;
+  viaturaPrefixo?: string | undefined;
 }
 
 export interface OrdemServico {
@@ -51,6 +54,13 @@ export interface OrdemServico {
   apoioGrupamento?: string | undefined;
   origemOrdemId?: string | undefined;
   ehApoio?: boolean | undefined;
+  // Assinaturas
+  finalizadoPor?: string | undefined;
+  finalizadoPorMatricula?: string | undefined;
+  assinaturaFinalizacao?: string | undefined;
+  coordenadorNome?: string | undefined;
+  coordenadorMatricula?: string | undefined;
+  assinaturaCoordenador?: string | undefined;
 }
 
 
@@ -99,6 +109,7 @@ export interface UsuarioCadastrado {
   foto?: string | undefined;
   senha?: string | undefined;
   status: StatusCadastro;
+  assinatura?: string | undefined;
   isDesenvolvedor?: boolean | undefined;
   dataCadastro: string;
 }
@@ -108,6 +119,7 @@ export interface OcupantePosto {
   nomeDeGuerra: string;
   grupamento?: SiglaGrupamento | 'Desenvolvedor' | undefined;
   dataHora: string;
+  viaturaPrefixo?: string | undefined;
 }
 
 export type MapaOcupacaoPostos = Record<string, OcupantePosto[]>;
