@@ -109,6 +109,7 @@ export interface UsuarioCadastrado {
   foto?: string | undefined;
   senha?: string | undefined;
   status: StatusCadastro;
+  assinatura?: string | undefined;
   isDesenvolvedor?: boolean | undefined;
   dataCadastro: string;
 }
@@ -118,6 +119,7 @@ export interface OcupantePosto {
   nomeDeGuerra: string;
   grupamento?: SiglaGrupamento | 'Desenvolvedor' | undefined;
   dataHora: string;
+  viaturaPrefixo?: string | undefined;
 }
 
 export type MapaOcupacaoPostos = Record<string, OcupantePosto[]>;
