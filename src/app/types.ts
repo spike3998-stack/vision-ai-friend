@@ -80,7 +80,14 @@ export type FuncaoPosto =
   | 'FÓRUM'
   | 'CREAS';
 
-export type SiglaGrupamento = 'GTRAN' | 'ROMU' | 'GRES' | 'GOC' | 'GID';
+export type SiglaGrupamento =
+  | 'GTRAN'
+  | 'ROMU'
+  | 'GRES'
+  | 'GOC'
+  | 'GID'
+  | 'CENTRAL'
+  | 'INSPETORIA';
 
 export type StatusCadastro = 'pendente' | 'autorizado' | 'negado';
 
