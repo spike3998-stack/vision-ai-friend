@@ -1,5 +1,15 @@
-import React, { useMemo, useRef, useState } from 'react';
-import { Footprints, X, Camera, Share2, Save, Loader2, Trash2, CheckCircle2 } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Footprints,
+  X,
+  Camera,
+  Share2,
+  Save,
+  Loader2,
+  Trash2,
+  CheckCircle2,
+  MapPin,
+} from 'lucide-react';
 import { MembroEquipe, OrdemServico, UsuarioCadastrado } from '../types';
 import { criarOrdemServidor } from '../services/api';
 
@@ -63,6 +73,79 @@ function paraBr(valor: string): string {
   return d.toLocaleString('pt-BR');
 }
 
+/** Obtém o endereço aproximado da posição atual do aparelho. */
+async function obterLocalizacaoAtual(): Promise<string> {
+  const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+    if (!navigator.geolocation) return reject(new Error('sem geolocalizacao'));
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 30000,
+    });
+  });
+  const { latitude, longitude } = pos.coords;
+  const coords = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+  try {
+    const resp = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`,
+      { headers: { Accept: 'application/json' } },
+    );
+    if (resp.ok) {
+      const dados = (await resp.json()) as { display_name?: string };
+      if (dados.display_name) return dados.display_name;
+    }
+  } catch {
+    /* mantém as coordenadas */
+  }
+  return coords;
+}
+
+/** Desenha a foto com as informações do patrulhamento sobrepostas. */
+async function montarImagemCompartilhavel(foto: string, linhas: string[]): Promise<Blob | null> {
+  const img = await new Promise<HTMLImageElement | null>((resolve) => {
+    const el = new Image();
+    el.onload = () => resolve(el);
+    el.onerror = () => resolve(null);
+    el.src = foto;
+  });
+  if (!img) return null;
+
+  const largura = 1080;
+  const escala = largura / img.width;
+  const alturaFoto = Math.round(img.height * escala);
+  const canvas = document.createElement('canvas');
+  const padding = 36;
+  const alturaLinha = 40;
+  const alturaTexto = padding * 2 + linhas.length * alturaLinha;
+  canvas.width = largura;
+  canvas.height = alturaFoto + alturaTexto;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, largura, alturaFoto);
+
+  const grad = ctx.createLinearGradient(0, alturaFoto - 160, 0, alturaFoto);
+  grad.addColorStop(0, 'rgba(15,23,42,0)');
+  grad.addColorStop(1, 'rgba(15,23,42,0.9)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, alturaFoto - 160, largura, 160);
+
+  ctx.textBaseline = 'top';
+  let y = alturaFoto + padding;
+  for (const linha of linhas) {
+    ctx.font = linha.startsWith('PATRULHAMENTO') ? 'bold 34px sans-serif' : '28px sans-serif';
+    ctx.fillStyle = linha.startsWith('PATRULHAMENTO') ? '#34d399' : '#f8fafc';
+    ctx.fillText(linha, padding, y, largura - padding * 2);
+    y += alturaLinha;
+  }
+
+  return new Promise<Blob | null>((resolve) =>
+    canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.85),
+  );
+}
+
 export const ModalPatrulhamento: React.FC<ModalPatrulhamentoProps> = ({
   usuarioAtivo,
   posto,
@@ -81,6 +164,7 @@ export const ModalPatrulhamento: React.FC<ModalPatrulhamentoProps> = ({
   const [salvando, setSalvando] = useState(false);
   const [salvo, setSalvo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [localizando, setLocalizando] = useState(false);
   const inputFoto = useRef<HTMLInputElement | null>(null);
 
   const grupo = usuarioAtivo?.grupamento || 'GCM';
@@ -111,6 +195,25 @@ export const ModalPatrulhamento: React.FC<ModalPatrulhamentoProps> = ({
       .join('\n');
   }, [grupo, naturezaFinal, local, inicio, fim, viaturaPrefixo, equipe, observacoes, usuarioAtivo]);
 
+  const marcarLocalizacao = async (silencioso = false) => {
+    setLocalizando(true);
+    try {
+      const endereco = await obterLocalizacaoAtual();
+      setLocal(endereco.toUpperCase());
+      setErro(null);
+    } catch {
+      if (!silencioso) setErro('Não foi possível obter a localização. Ative o GPS e tente de novo.');
+    } finally {
+      setLocalizando(false);
+    }
+  };
+
+  // Preenche o local automaticamente ao abrir o patrulhamento.
+  useEffect(() => {
+    void marcarLocalizacao(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const alternarNatureza = (n: string) =>
     setNaturezas((atual) => (atual.includes(n) ? atual.filter((x) => x !== n) : [...atual, n]));
 
@@ -121,7 +224,34 @@ export const ModalPatrulhamento: React.FC<ModalPatrulhamentoProps> = ({
     setFotos((atual) => [...atual, ...novas]);
   };
 
-  const compartilharWhatsApp = () => {
+  const compartilharWhatsApp = async () => {
+    const linhas = textoCompartilhar.split('\n').map((l) => l.replace(/\*/g, ''));
+    const primeiraFoto = fotos[0];
+    if (primeiraFoto) {
+      try {
+        const blob = await montarImagemCompartilhavel(primeiraFoto, linhas);
+        if (blob) {
+          const arquivo = new File([blob], 'patrulhamento.jpg', { type: 'image/jpeg' });
+          const nav = navigator as Navigator & {
+            canShare?: (data: ShareData) => boolean;
+            share?: (data: ShareData) => Promise<void>;
+          };
+          if (nav.share && nav.canShare?.({ files: [arquivo] })) {
+            await nav.share({ files: [arquivo], text: textoCompartilhar });
+            return;
+          }
+          // Sem compartilhamento nativo: baixa a imagem e abre o WhatsApp com o texto.
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'patrulhamento.jpg';
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(url), 5000);
+        }
+      } catch {
+        /* segue para o compartilhamento apenas em texto */
+      }
+    }
     window.open(`https://wa.me/?text=${encodeURIComponent(textoCompartilhar)}`, '_blank');
   };
 
@@ -254,12 +384,28 @@ export const ModalPatrulhamento: React.FC<ModalPatrulhamentoProps> = ({
             <label className="block text-[11px] font-black uppercase text-slate-500 mb-1">
               Local
             </label>
-            <input
-              value={local}
-              onChange={(e) => setLocal(e.target.value)}
-              placeholder="Rua, bairro, cidade"
-              className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-emerald-500"
-            />
+            <div className="flex gap-2">
+              <input
+                value={local}
+                onChange={(e) => setLocal(e.target.value)}
+                placeholder={localizando ? 'Obtendo localização...' : 'Rua, bairro, cidade'}
+                className="flex-1 min-w-0 px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-emerald-500"
+              />
+              <button
+                type="button"
+                onClick={() => void marcarLocalizacao()}
+                disabled={localizando}
+                title="Marcar minha localização"
+                className="shrink-0 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white flex items-center gap-1.5 text-[10px] font-black uppercase cursor-pointer"
+              >
+                {localizando ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <MapPin className="w-4 h-4" />
+                )}
+                GPS
+              </button>
+            </div>
           </div>
 
           {/* DATAS */}
@@ -366,7 +512,7 @@ export const ModalPatrulhamento: React.FC<ModalPatrulhamentoProps> = ({
           </button>
           <button
             type="button"
-            onClick={compartilharWhatsApp}
+            onClick={() => void compartilharWhatsApp()}
             className="w-full py-3 px-4 rounded-xl border border-emerald-300 hover:bg-emerald-50 text-emerald-700 font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"
           >
             <Share2 className="w-4 h-4" />
