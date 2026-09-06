@@ -61,10 +61,13 @@ export const BoletimOcorrencia: React.FC<BoletimOcorrenciaProps> = ({
   viaturaPrefixo,
   onVoltar,
   onOrdemAtualizada,
+  onOcorrenciaEncerrada,
 }) => {
   const [relato, setRelato] = useState<string>(ordem.relato || '');
   const [fotos, setFotos] = useState<string[]>(ordem.fotos || []);
   const [salvando, setSalvando] = useState(false);
+  const [encerrando, setEncerrando] = useState(false);
+  const [confirmandoEncerrar, setConfirmandoEncerrar] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
   const [reboque, setReboque] = useState<boolean>(Boolean(ordem.reboqueAcionado));
   const [escolhendoApoio, setEscolhendoApoio] = useState(false);
