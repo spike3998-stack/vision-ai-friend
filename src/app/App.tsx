@@ -556,52 +556,6 @@ export default function App() {
 
   return (
     <div id="app-root" className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between selection:bg-blue-100 selection:text-blue-900 font-sans">
-      {/* Top Header com Brasão Oficial de Arraial do Cabo */}
-      <header id="header-top" className={`w-full border-b py-3 px-4 sm:px-6 shadow-xs transition-colors ${isTelaDev ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
-        <div className="max-w-xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-lg bg-slate-50 border border-slate-200 p-1 flex items-center justify-center shadow-xs overflow-hidden shrink-0">
-              <img
-                src="/brasao-arraial-do-cabo.png"
-                alt="Brasão da Prefeitura Municipal de Arraial do Cabo"
-                className="w-full h-full object-contain"
-                referrerPolicy="no-referrer"
-              />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className={`text-base font-bold leading-tight uppercase tracking-tight ${isTelaDev ? 'text-white' : 'text-slate-900'}`}>
-                  Guarda Municipal
-                </h1>
-                {isTelaDev && (
-                  <span className="px-2 py-0.5 rounded-md bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[10px] font-black uppercase tracking-wider">
-                    DEV 67549
-                  </span>
-                )}
-              </div>
-              <p className={`text-xs font-medium ${isTelaDev ? 'text-slate-400' : 'text-slate-500'}`}>
-                {isTelaDev ? 'Ambiente do Desenvolvedor • Arraial do Cabo' : 'Arraial do Cabo - RJ'}
-              </p>
-            </div>
-          </div>
-
-          {currentScreen !== 'login' && currentScreen !== 'cadastrar' && (
-            <button
-              id="btn-sair-sessao"
-              type="button"
-              onClick={handleLogout}
-              className={`flex items-center gap-1.5 py-2 px-3.5 rounded-xl border text-xs font-bold transition-colors cursor-pointer ${
-                isTelaDev
-                  ? 'border-slate-700 bg-slate-800/80 hover:bg-rose-900/40 hover:border-rose-700 text-slate-200 hover:text-rose-300'
-                  : 'border-slate-300 hover:bg-rose-50 hover:border-rose-300 hover:text-rose-700 text-slate-700'
-              }`}
-            >
-              <LogOut className="w-4 h-4" />
-              <span>SAIR</span>
-            </button>
-          )}
-        </div>
-      </header>
 
       {/* Main Content Area */}
       <main id="main-area" className="flex-1 flex items-center justify-center p-4 sm:p-6">
