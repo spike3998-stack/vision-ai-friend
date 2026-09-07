@@ -2,6 +2,7 @@ export type Screen =
   | 'login'
   | 'cadastrar'
   | 'assinatura'
+  | 'verificacao'
   | 'menu'
   | 'posto-servico'
   | 'opcao-funcao'
@@ -124,6 +125,8 @@ export interface UsuarioCadastrado {
   nomeDeGuerra: string;
   matricula: string;
   tipoSanguineo: string;
+  /** Celular com WhatsApp, apenas dígitos, no formato 55 + DDD + número. */
+  celular?: string | undefined;
   grupamento: SiglaGrupamento;
   foto?: string | undefined;
   senha?: string | undefined;

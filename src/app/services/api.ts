@@ -110,6 +110,25 @@ export async function zerarCadastrosServidor(): Promise<UsuarioCadastrado[] | nu
   return null;
 }
 
+/** LOGIN EM DUAS ETAPAS: envia o código de 6 dígitos ao WhatsApp cadastrado. */
+export async function enviarCodigoLogin(
+  matricula: string
+): Promise<{ success: boolean; celular?: string; error?: string }> {
+  const data = await chamar<any>({ acao: 'auth.enviarCodigo', matricula });
+  if (data?.success) return { success: true, celular: data.celular };
+  return { success: false, error: data?.error || 'Não foi possível enviar o código agora.' };
+}
+
+/** LOGIN EM DUAS ETAPAS: confere o código digitado pelo agente. */
+export async function verificarCodigoLogin(
+  matricula: string,
+  codigo: string
+): Promise<{ success: boolean; error?: string }> {
+  const data = await chamar<any>({ acao: 'auth.verificarCodigo', matricula, codigo });
+  if (data?.success) return { success: true };
+  return { success: false, error: data?.error || 'Código inválido.' };
+}
+
 /** POSTOS DE SERVIÇO: busca ocupação atual. */
 export async function fetchPostosServidor(): Promise<MapaOcupacaoPostos> {
   const data = await chamar<MapaOcupacaoPostos>({ acao: 'postos.listar' });
