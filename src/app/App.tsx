@@ -283,6 +283,7 @@ export default function App() {
     !matriculaDuplicada &&
     cadTipoSanguineo.trim() !== '' &&
     Boolean(cadGrupamento) &&
+    celularDigitos(cadCelular).length === 13 &&
     cadSenha.trim() !== '';
 
   const handleCadastro = async (e: React.FormEvent) => {
