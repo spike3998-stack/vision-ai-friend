@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Lock, Eye, EyeOff, LogIn, UserPlus, ArrowLeft, LogOut, CheckCircle2, AlertCircle, Shield, Droplets, Users, X, Pencil, Camera, Trash2, Upload, Crop, Navigation, Radio } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, LogIn, UserPlus, ArrowLeft, LogOut, CheckCircle2, AlertCircle, Shield, Droplets, Users, X, Pencil, Camera, Trash2, Upload, Crop, Navigation, Radio, Phone, MessageCircle, ShieldCheck } from 'lucide-react';
 
 import { Screen, FuncaoPosto, SiglaGrupamento, UsuarioCadastrado, MapaOcupacaoPostos, OcupantePosto, Viatura, MembroEquipe } from './types';
 import { GRUPAMENTOS, MATRICULA_DESENVOLVEDOR } from './data/grupamentos';
@@ -18,6 +18,8 @@ import {
   excluirViaturaServidor,
   fetchOrdensServidor,
   fetchChecklistsServidor,
+  enviarCodigoLogin,
+  verificarCodigoLogin,
 } from './services/api';
 import { gerarLivroAtaPdf } from './services/livroAtaPdf';
 import { processarFotoPerfil, lerArquivoParaEdicao } from './services/imageUtils';
@@ -36,6 +38,21 @@ import { BannerNotificacoes } from './components/BannerNotificacoes';
 import { ChatRadio } from './components/ChatRadio';
 
 
+
+/** Formata o celular sempre iniciando pelo código do país +55. */
+function formatarCelular(valor: string) {
+  const d = valor.replace(/\D/g, '').replace(/^55/, '').slice(0, 11);
+  if (!d) return '+55 ';
+  if (d.length <= 2) return `+55 (${d}`;
+  if (d.length <= 7) return `+55 (${d.slice(0, 2)}) ${d.slice(2)}`;
+  return `+55 (${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+}
+
+/** Retorna apenas os dígitos do celular no formato 55DDDNÚMERO. */
+function celularDigitos(valor: string) {
+  const d = valor.replace(/\D/g, '').replace(/^55/, '');
+  return d ? `55${d}` : '';
+}
 
 /** Tipos sanguíneos disponíveis no cadastro. */
 const TIPOS_SANGUINEOS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -152,6 +169,15 @@ export default function App() {
   const [imagemParaCortarCadastro, setImagemParaCortarCadastro] = useState<string | null>(null);
   const cadFileInputRef = useRef<HTMLInputElement | null>(null);
   const [cadSenha, setCadSenha] = useState('');
+  const [cadCelular, setCadCelular] = useState('+55 ');
+
+  // Verificação em duas etapas (código de 6 dígitos no WhatsApp)
+  const [usuarioAguardandoCodigo, setUsuarioAguardandoCodigo] = useState<UsuarioCadastrado | null>(null);
+  const [codigoDigitado, setCodigoDigitado] = useState('');
+  const [codigoErro, setCodigoErro] = useState<string | null>(null);
+  const [codigoInfo, setCodigoInfo] = useState<string | null>(null);
+  const [enviandoCodigo, setEnviandoCodigo] = useState(false);
+  const [verificandoCodigo, setVerificandoCodigo] = useState(false);
   const [cadSuccessMsg, setCadSuccessMsg] = useState<string | null>(null);
   const [cadAssinatura, setCadAssinatura] = useState<string | null>(null);
   const [viaturaAtivaPrefixo, setViaturaAtivaPrefixo] = useState<string | null>(null);
@@ -288,6 +314,10 @@ export default function App() {
       setAuthError('Por favor, selecione seu GRUPAMENTO.');
       return;
     }
+    if (celularDigitos(cadCelular).length !== 13) {
+      setAuthError('Informe um CELULAR válido com DDD (ex: +55 (22) 99999-9999).');
+      return;
+    }
     if (!cadSenha.trim()) {
       setAuthError('Por favor, crie uma SENHA de acesso.');
       return;
@@ -307,6 +337,7 @@ export default function App() {
       nomeDeGuerra: cadNomeDeGuerra.trim().toUpperCase(),
       matricula: mat,
       tipoSanguineo: cadTipoSanguineo.trim().toUpperCase(),
+      celular: celularDigitos(cadCelular),
       grupamento: cadGrupamento,
       foto: cadFoto,
       assinatura,
