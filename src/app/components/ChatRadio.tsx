@@ -46,6 +46,7 @@ export const ChatRadio: React.FC<ChatRadioProps> = ({
   const [gravando, setGravando] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [sugestaoEnviada, setSugestaoEnviada] = useState(false);
 
   const gravadorRef = useRef<MediaRecorder | null>(null);
   const pedacosRef = useRef<Blob[]>([]);
