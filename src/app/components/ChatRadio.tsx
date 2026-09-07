@@ -158,6 +158,37 @@ export const ChatRadio: React.FC<ChatRadioProps> = ({
     { id: 'grupamento', rotulo: 'Grupamento', icone: <Shield className="w-3.5 h-3.5" /> },
   ];
 
+  const tituloModo =
+    modo === 'ajuda' ? 'Ajuda do aplicativo' : modo === 'sugestoes' ? 'Sugestões de melhoria' : 'Rádio de comunicação';
+  const iconeModo =
+    modo === 'ajuda' ? (
+      <LifeBuoy className="w-5 h-5 text-emerald-400" />
+    ) : modo === 'sugestoes' ? (
+      <Lightbulb className="w-5 h-5 text-amber-400" />
+    ) : (
+      <Radio className="w-5 h-5 text-blue-400" />
+    );
+  const subtitulo =
+    modo === 'sugestoes'
+      ? 'Canal de sugestões'
+      : modo === 'ajuda'
+        ? ehDesenvolvedor
+          ? contato
+            ? contato.nomeDeGuerra
+            : 'Selecione um agente'
+          : 'Suporte do desenvolvedor'
+        : aba === 'geral'
+          ? 'Chat geral'
+          : aba === 'grupamento'
+            ? `Chat ${usuarioAtivo.grupamento}`
+            : contato
+              ? contato.nomeDeGuerra
+              : 'Selecione um agente';
+
+  const mostrarListaContatos =
+    (modo === 'radio' && aba === 'individual' && !contato) ||
+    (modo === 'ajuda' && ehDesenvolvedor && !contato);
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/70 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="w-full sm:max-w-lg h-[92vh] sm:h-[80vh] bg-white sm:rounded-2xl rounded-t-2xl border border-slate-200 shadow-xl flex flex-col overflow-hidden">
@@ -165,57 +196,65 @@ export const ChatRadio: React.FC<ChatRadioProps> = ({
         <div className="bg-slate-900 text-white p-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-blue-950 border border-blue-800 flex items-center justify-center shrink-0">
-              <Radio className="w-5 h-5 text-blue-400" />
+              {iconeModo}
             </div>
             <div className="min-w-0">
               <span className="text-[11px] font-black uppercase tracking-wider text-blue-400">
-                Rádio de comunicação
+                {tituloModo}
               </span>
-              <p className="text-sm font-black uppercase truncate">
-                {aba === 'geral'
-                  ? 'Chat geral'
-                  : aba === 'grupamento'
-                    ? `Chat ${usuarioAtivo.grupamento}`
-                    : contato
-                      ? contato.nomeDeGuerra
-                      : 'Selecione um agente'}
-              </p>
+              <p className="text-sm font-black uppercase truncate">{subtitulo}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onFechar}
             className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 cursor-pointer"
-            aria-label="Fechar rádio"
+            aria-label="Fechar"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* ABAS */}
-        <div className="grid grid-cols-3 gap-1 p-2 bg-slate-100 border-b border-slate-200">
-          {abas.map((a) => (
-            <button
-              key={a.id}
-              type="button"
-              onClick={() => {
-                setAba(a.id);
-                if (a.id !== 'individual') setContato(null);
-              }}
-              className={`py-2 px-2 rounded-lg text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
-                aba === a.id
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              {a.icone}
-              <span>{a.rotulo}</span>
-            </button>
-          ))}
-        </div>
+        {modo === 'radio' && (
+          <div className="grid grid-cols-3 gap-1 p-2 bg-slate-100 border-b border-slate-200">
+            {abas.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                onClick={() => {
+                  setAba(a.id);
+                  if (a.id !== 'individual') setContato(null);
+                }}
+                className={`py-2 px-2 rounded-lg text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
+                  aba === a.id
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                {a.icone}
+                <span>{a.rotulo}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {modo === 'sugestoes' && (
+          <p className="text-[11px] text-slate-600 bg-amber-50 border-b border-amber-200 px-3 py-2">
+            Escreva aqui sua sugestão de melhoria para o aplicativo. Todas as mensagens ficam
+            registradas neste canal.
+          </p>
+        )}
+
+        {modo === 'ajuda' && !ehDesenvolvedor && (
+          <p className="text-[11px] text-slate-600 bg-emerald-50 border-b border-emerald-200 px-3 py-2">
+            Conversa direta com o desenvolvedor do aplicativo. Descreva sua dúvida.
+          </p>
+        )}
 
         {/* LISTA DE CONTATOS (CHAT INDIVIDUAL) */}
-        {aba === 'individual' && !contato ? (
+        {mostrarListaContatos ? (
+
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
             <div className="relative">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
