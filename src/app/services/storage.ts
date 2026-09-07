@@ -101,63 +101,8 @@ export function salvarOcupacaoPostos(mapa: MapaOcupacaoPostos): void {
 // ==========================================
 const STORAGE_KEY_VIATURAS = 'gm_arraial_viaturas_v1';
 
-export const VIATURAS_INICIAIS: Viatura[] = [
-  {
-    id: 'vtr-romu-01',
-    prefixo: 'ROMU 01',
-    modelo: 'Renault Duster 4x4',
-    placa: 'RIO-1A23',
-    grupamento: 'ROMU',
-    status: 'disponivel',
-    kmAtual: '42.150 km',
-    observacoes: 'Giroflex, rádio comunicador e sirene operacional',
-    dataCadastro: '01/09/2026',
-  },
-  {
-    id: 'vtr-gtran-02',
-    prefixo: 'GTRAN 02',
-    modelo: 'Chevrolet Spin',
-    placa: 'RIO-4B56',
-    grupamento: 'GTRAN',
-    status: 'disponivel',
-    kmAtual: '38.800 km',
-    observacoes: 'Apoio de trânsito com cones e sinalização viária',
-    dataCadastro: '01/09/2026',
-  },
-  {
-    id: 'vtr-gres-03',
-    prefixo: 'GRES 03',
-    modelo: 'Toyota Hilux 4x4',
-    placa: 'RIO-7C89',
-    grupamento: 'GRES',
-    status: 'disponivel',
-    kmAtual: '29.300 km',
-    observacoes: 'Patrulhamento ambiental e orlas marítimas',
-    dataCadastro: '01/09/2026',
-  },
-  {
-    id: 'vtr-op-04',
-    prefixo: 'PATRULHA 04',
-    modelo: 'Renault Duster',
-    placa: 'RIO-9D12',
-    grupamento: 'OPERACIONAL',
-    status: 'disponivel',
-    kmAtual: '51.200 km',
-    observacoes: 'Ronda ostensiva Centro e bairros',
-    dataCadastro: '02/09/2026',
-  },
-  {
-    id: 'vtr-goc-05',
-    prefixo: 'GOC 05',
-    modelo: 'Mitsubishi L200',
-    placa: 'RIO-3E45',
-    grupamento: 'GOC',
-    status: 'disponivel',
-    kmAtual: '34.600 km',
-    observacoes: 'Viatura adaptada para canil da Guarda',
-    dataCadastro: '02/09/2026',
-  },
-];
+/** Sem viaturas de exemplo: o cadastro é feito pelo próprio app. */
+export const VIATURAS_INICIAIS: Viatura[] = [];
 
 export function getViaturasArmazenadas(): Viatura[] {
   try {
