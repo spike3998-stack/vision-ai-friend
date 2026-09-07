@@ -190,6 +190,31 @@ export const ChatRadio: React.FC<ChatRadioProps> = ({
     (modo === 'radio' && aba === 'individual' && !contato) ||
     (modo === 'ajuda' && ehDesenvolvedor && !contato);
 
+  /** Agente comum só envia a sugestão; não vê nenhuma mensagem. */
+  const formularioSugestao = modo === 'sugestoes' && !ehDesenvolvedor;
+  /** Desenvolvedor apenas lê o feed de sugestões. */
+  const feedSugestoes = modo === 'sugestoes' && ehDesenvolvedor;
+
+  const enviarSugestao = async () => {
+    const conteudo = texto.trim();
+    if (!conteudo) return;
+    setEnviando(true);
+    setErro(null);
+    const nova = await enviarMensagemChat('sugestoes', {
+      autorMatricula: usuarioAtivo.matricula,
+      autorNome: usuarioAtivo.nomeDeGuerra,
+      autorGrupamento: usuarioAtivo.grupamento,
+      texto: conteudo,
+    });
+    setEnviando(false);
+    if (nova) {
+      setTexto('');
+      setSugestaoEnviada(true);
+    } else {
+      setErro('Não foi possível enviar. Verifique sua conexão.');
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/70 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="w-full sm:max-w-lg h-[92vh] sm:h-[80vh] bg-white sm:rounded-2xl rounded-t-2xl border border-slate-200 shadow-xl flex flex-col overflow-hidden">
