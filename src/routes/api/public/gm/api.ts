@@ -152,6 +152,8 @@ function soDigitos(valor: string) {
 async function enviarWhatsApp(numero: string, texto: string) {
   const url = process.env["WHATSAPP_API_URL"];
   const token = process.env["WHATSAPP_API_TOKEN"];
+  // Z-API: o token de segurança da conta vai no header Client-Token.
+  const clientToken = process.env["WHATSAPP_CLIENT_TOKEN"] || token;
   if (!url || !token) {
     console.warn("[WhatsApp] API não configurada (WHATSAPP_API_URL / WHATSAPP_API_TOKEN).");
     return { ok: false, erro: "Serviço de WhatsApp não configurado." };
@@ -163,7 +165,7 @@ async function enviarWhatsApp(numero: string, texto: string) {
       headers: {
         "Content-Type": "application/json",
         // Z-API usa Client-Token; Evolution usa apikey.
-        "Client-Token": token,
+        "Client-Token": clientToken as string,
         apikey: token,
         Authorization: `Bearer ${token}`,
       },
@@ -173,9 +175,13 @@ async function enviarWhatsApp(numero: string, texto: string) {
     const corpo = await res.text().catch(() => "");
     if (!res.ok) {
       console.warn("[WhatsApp] falha no envio:", res.status, corpo);
+      if (/client-token/i.test(corpo)) {
+        return { ok: false, erro: "Token de segurança do WhatsApp (Client-Token) não configurado." };
+      }
       return { ok: false, erro: `Falha ao enviar (${res.status}).` };
     }
     return { ok: true };
+
   } catch (err) {
     console.warn("[WhatsApp] erro no envio:", err);
     return { ok: false, erro: "Não foi possível falar com o serviço de WhatsApp." };
