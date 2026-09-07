@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Lock, Eye, EyeOff, LogIn, UserPlus, ArrowLeft, LogOut, CheckCircle2, AlertCircle, Shield, Droplets, Users, X, Pencil, Camera, Trash2, Upload, Crop, Navigation, Radio, Phone, MessageCircle, ShieldCheck } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, LogIn, UserPlus, ArrowLeft, LogOut, CheckCircle2, AlertCircle, Shield, Droplets, Users, X, Pencil, Camera, Trash2, Upload, Crop, Navigation, Radio, Phone, MessageCircle, ShieldCheck, LifeBuoy, Lightbulb } from 'lucide-react';
 
 import { Screen, FuncaoPosto, SiglaGrupamento, UsuarioCadastrado, MapaOcupacaoPostos, OcupantePosto, Viatura, MembroEquipe } from './types';
 import { GRUPAMENTOS, MATRICULA_DESENVOLVEDOR } from './data/grupamentos';
@@ -35,7 +35,7 @@ import { EquipePainel } from './components/EquipePainel';
 import { LivroAta } from './components/LivroAta';
 import { PadAssinatura } from './components/PadAssinatura';
 import { BannerNotificacoes } from './components/BannerNotificacoes';
-import { ChatRadio } from './components/ChatRadio';
+import { ChatRadio, ModoChat } from './components/ChatRadio';
 
 
 
@@ -82,7 +82,7 @@ export default function App() {
   const [usuarios, setUsuarios] = useState<UsuarioCadastrado[]>(getUsuariosArmazenados);
 
   // Rádio de comunicação (chat geral, individual e do grupamento)
-  const [chatAberto, setChatAberto] = useState(false);
+  const [chatAberto, setChatAberto] = useState<ModoChat | null>(null);
 
   // Lista de viaturas cadastradas pelo desenvolvedor
   const [viaturas, setViaturas] = useState<Viatura[]>(getViaturasArmazenadas);
