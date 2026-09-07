@@ -1,13 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Radio, X, Send, Mic, Square, Users, User, Shield, Search } from 'lucide-react';
+import { Radio, X, Send, Mic, Square, Users, User, Shield, Search, LifeBuoy, Lightbulb } from 'lucide-react';
 import { UsuarioCadastrado } from '../types';
-import { GRUPAMENTOS } from '../data/grupamentos';
+import { GRUPAMENTOS, MATRICULA_DESENVOLVEDOR } from '../data/grupamentos';
 import { fetchMensagensChat, enviarMensagemChat, MensagemChat } from '../services/api';
+
+export type ModoChat = 'radio' | 'ajuda' | 'sugestoes';
 
 interface ChatRadioProps {
   usuarioAtivo: UsuarioCadastrado;
   usuarios: UsuarioCadastrado[];
   onFechar: () => void;
+  modo?: ModoChat;
 }
 
 type Aba = 'geral' | 'individual' | 'grupamento';
@@ -16,6 +19,7 @@ type Aba = 'geral' | 'individual' | 'grupamento';
 function canalParticular(a: string, b: string) {
   return `dm:${[a, b].sort().join('|')}`;
 }
+
 
 function blobParaDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
