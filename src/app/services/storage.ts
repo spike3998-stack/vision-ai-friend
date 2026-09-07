@@ -99,65 +99,10 @@ export function salvarOcupacaoPostos(mapa: MapaOcupacaoPostos): void {
 // ==========================================
 // CONTROLE DE VIATURAS OPERACIONAIS
 // ==========================================
-const STORAGE_KEY_VIATURAS = 'gm_arraial_viaturas_v1';
+const STORAGE_KEY_VIATURAS = 'gm_arraial_viaturas_v2';
 
-export const VIATURAS_INICIAIS: Viatura[] = [
-  {
-    id: 'vtr-romu-01',
-    prefixo: 'ROMU 01',
-    modelo: 'Renault Duster 4x4',
-    placa: 'RIO-1A23',
-    grupamento: 'ROMU',
-    status: 'disponivel',
-    kmAtual: '42.150 km',
-    observacoes: 'Giroflex, rádio comunicador e sirene operacional',
-    dataCadastro: '01/09/2026',
-  },
-  {
-    id: 'vtr-gtran-02',
-    prefixo: 'GTRAN 02',
-    modelo: 'Chevrolet Spin',
-    placa: 'RIO-4B56',
-    grupamento: 'GTRAN',
-    status: 'disponivel',
-    kmAtual: '38.800 km',
-    observacoes: 'Apoio de trânsito com cones e sinalização viária',
-    dataCadastro: '01/09/2026',
-  },
-  {
-    id: 'vtr-gres-03',
-    prefixo: 'GRES 03',
-    modelo: 'Toyota Hilux 4x4',
-    placa: 'RIO-7C89',
-    grupamento: 'GRES',
-    status: 'disponivel',
-    kmAtual: '29.300 km',
-    observacoes: 'Patrulhamento ambiental e orlas marítimas',
-    dataCadastro: '01/09/2026',
-  },
-  {
-    id: 'vtr-op-04',
-    prefixo: 'PATRULHA 04',
-    modelo: 'Renault Duster',
-    placa: 'RIO-9D12',
-    grupamento: 'OPERACIONAL',
-    status: 'disponivel',
-    kmAtual: '51.200 km',
-    observacoes: 'Ronda ostensiva Centro e bairros',
-    dataCadastro: '02/09/2026',
-  },
-  {
-    id: 'vtr-goc-05',
-    prefixo: 'GOC 05',
-    modelo: 'Mitsubishi L200',
-    placa: 'RIO-3E45',
-    grupamento: 'GOC',
-    status: 'disponivel',
-    kmAtual: '34.600 km',
-    observacoes: 'Viatura adaptada para canil da Guarda',
-    dataCadastro: '02/09/2026',
-  },
-];
+/** Sem viaturas de exemplo: o cadastro é feito pelo próprio app. */
+export const VIATURAS_INICIAIS: Viatura[] = [];
 
 export function getViaturasArmazenadas(): Viatura[] {
   try {
@@ -187,60 +132,10 @@ export function salvarViaturas(viaturas: Viatura[]): void {
 // ==========================================
 // CONTROLE DE CHECK-LISTS DE VIATURAS
 // ==========================================
-const STORAGE_KEY_CHECKLISTS = 'gm_arraial_checklists_viaturas_v1';
+const STORAGE_KEY_CHECKLISTS = 'gm_arraial_checklists_viaturas_v2';
 
-export const CHECKLISTS_INICIAIS: ChecklistViatura[] = [
-  {
-    id: 'chk-init-01',
-    viaturaId: 'vtr-romu-01',
-    prefixoViatura: 'ROMU 01',
-    placaViatura: 'RIO-1A23',
-    modeloViatura: 'Renault Duster 4x4',
-    motoristaNome: 'SILVA',
-    motoristaMatricula: '10234',
-    motoristaGrupamento: 'ROMU',
-    dataHora: '03/09/2026 07:45',
-    kmAtual: '42.150 km',
-    nivelCombustivel: 'cheio',
-    pneusEstepe: 'conforme',
-    iluminacaoSirene: 'conforme',
-    freiosDirecao: 'conforme',
-    oleoFluidos: 'conforme',
-    limpeza: 'limpo',
-    avariasLataria: false,
-    detalhesAvarias: '',
-    radioComunicador: true,
-    documentosViatura: true,
-    kitSeguranca: true,
-    observacoesGerais: 'Viatura inspecionada no início do plantão diurno. Tudo operante.',
-    statusGeral: 'aprovada',
-  },
-  {
-    id: 'chk-init-02',
-    viaturaId: 'vtr-gtran-02',
-    prefixoViatura: 'GTRAN 02',
-    placaViatura: 'RIO-4B56',
-    modeloViatura: 'Chevrolet Spin',
-    motoristaNome: 'COSTA',
-    motoristaMatricula: '20456',
-    motoristaGrupamento: 'GTRAN',
-    dataHora: '02/09/2026 19:15',
-    kmAtual: '38.800 km',
-    nivelCombustivel: '3_4',
-    pneusEstepe: 'conforme',
-    iluminacaoSirene: 'conforme',
-    freiosDirecao: 'conforme',
-    oleoFluidos: 'conforme',
-    limpeza: 'regular',
-    avariasLataria: true,
-    detalhesAvarias: 'Pequeno arranhão pré-existente no para-choque traseiro lado direito.',
-    radioComunicador: true,
-    documentosViatura: true,
-    kitSeguranca: true,
-    observacoesGerais: 'Cones e fita zebrada presentes no porta-malas.',
-    statusGeral: 'aprovada_com_restricoes',
-  },
-];
+/** Sem check-lists de exemplo: os registros são criados pelos motoristas. */
+export const CHECKLISTS_INICIAIS: ChecklistViatura[] = [];
 
 export function getChecklistsArmazenados(): ChecklistViatura[] {
   try {
