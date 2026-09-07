@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Lock, Eye, EyeOff, LogIn, UserPlus, ArrowLeft, LogOut, CheckCircle2, AlertCircle, Shield, Droplets, Users, X, Pencil, Camera, Trash2, Upload, Crop, Navigation, Radio, Phone, MessageCircle, ShieldCheck } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, LogIn, UserPlus, ArrowLeft, LogOut, CheckCircle2, AlertCircle, Shield, Droplets, Users, X, Pencil, Camera, Trash2, Upload, Crop, Navigation, Radio, Phone, MessageCircle, ShieldCheck, LifeBuoy, Lightbulb } from 'lucide-react';
 
 import { Screen, FuncaoPosto, SiglaGrupamento, UsuarioCadastrado, MapaOcupacaoPostos, OcupantePosto, Viatura, MembroEquipe } from './types';
 import { GRUPAMENTOS, MATRICULA_DESENVOLVEDOR } from './data/grupamentos';
@@ -35,7 +35,7 @@ import { EquipePainel } from './components/EquipePainel';
 import { LivroAta } from './components/LivroAta';
 import { PadAssinatura } from './components/PadAssinatura';
 import { BannerNotificacoes } from './components/BannerNotificacoes';
-import { ChatRadio } from './components/ChatRadio';
+import { ChatRadio, ModoChat } from './components/ChatRadio';
 
 
 
@@ -82,7 +82,7 @@ export default function App() {
   const [usuarios, setUsuarios] = useState<UsuarioCadastrado[]>(getUsuariosArmazenados);
 
   // Rádio de comunicação (chat geral, individual e do grupamento)
-  const [chatAberto, setChatAberto] = useState(false);
+  const [chatAberto, setChatAberto] = useState<ModoChat | null>(null);
 
   // Lista de viaturas cadastradas pelo desenvolvedor
   const [viaturas, setViaturas] = useState<Viatura[]>(getViaturasArmazenadas);
@@ -195,6 +195,9 @@ export default function App() {
   const [editPerfilGrupamento, setEditPerfilGrupamento] = useState<SiglaGrupamento>('ROMU');
   const [editPerfilFoto, setEditPerfilFoto] = useState<string | undefined>(undefined);
   const [imagemParaCortarPerfil, setImagemParaCortarPerfil] = useState<string | null>(null);
+  const [editPerfilCelular, setEditPerfilCelular] = useState('+55 ');
+  const [editPerfilAssinatura, setEditPerfilAssinatura] = useState<string | null>(null);
+  const [editandoAssinatura, setEditandoAssinatura] = useState(false);
   const [editPerfilSenha, setEditPerfilSenha] = useState('');
   const [editPerfilShowSenha, setEditPerfilShowSenha] = useState(false);
   const [editPerfilError, setEditPerfilError] = useState<string | null>(null);
@@ -676,6 +679,9 @@ export default function App() {
     setEditPerfilTipoSanguineo(usuarioAtivo.tipoSanguineo);
     setEditPerfilGrupamento(usuarioAtivo.grupamento);
     setEditPerfilFoto(usuarioAtivo.foto);
+    setEditPerfilCelular(formatarCelular(usuarioAtivo.celular || ''));
+    setEditPerfilAssinatura(usuarioAtivo.assinatura || null);
+    setEditandoAssinatura(false);
     setEditPerfilSenha(usuarioAtivo.senha || '');
     setEditPerfilShowSenha(false);
     setEditPerfilError(null);
@@ -720,6 +726,12 @@ export default function App() {
       return;
     }
 
+    const cel = celularDigitos(editPerfilCelular);
+    if (cel && cel.length !== 13) {
+      setEditPerfilError('Informe um celular válido com DDD (ex: +55 (22) 99999-9999).');
+      return;
+    }
+
     const usuarioAtualizado: UsuarioCadastrado = {
       ...usuarioAtivo,
       nomeDeGuerra: ng,
@@ -727,6 +739,8 @@ export default function App() {
       tipoSanguineo: editPerfilTipoSanguineo.trim().toUpperCase() || usuarioAtivo.tipoSanguineo,
       grupamento: editPerfilGrupamento,
       foto: editPerfilFoto,
+      celular: celularDigitos(editPerfilCelular) || usuarioAtivo.celular,
+      assinatura: editPerfilAssinatura || usuarioAtivo.assinatura,
       senha: editPerfilSenha.trim() || usuarioAtivo.senha,
     };
 
@@ -814,15 +828,33 @@ export default function App() {
           )}
 
           {usuarioAtivo && currentScreen !== 'login' && currentScreen !== 'cadastrar' && currentScreen !== 'assinatura' && (
-            <div className="flex justify-end mb-3">
+            <div className="flex justify-end gap-2 mb-3">
               <button
                 type="button"
-                onClick={() => setChatAberto(true)}
+                onClick={() => setChatAberto('radio')}
                 className="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-sm"
                 title="Rádio de comunicação"
               >
                 <Radio className="w-4 h-4 text-blue-400" />
                 <span>Rádio</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setChatAberto('ajuda')}
+                className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-sm"
+                title="Ajuda com o aplicativo"
+              >
+                <LifeBuoy className="w-4 h-4" />
+                <span>Ajuda</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setChatAberto('sugestoes')}
+                className="px-3.5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-black uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-sm"
+                title="Sugestões de melhoria"
+              >
+                <Lightbulb className="w-4 h-4" />
+                <span>Sugestões</span>
               </button>
             </div>
           )}
@@ -831,9 +863,11 @@ export default function App() {
             <ChatRadio
               usuarioAtivo={usuarioAtivo}
               usuarios={usuarios}
-              onFechar={() => setChatAberto(false)}
+              modo={chatAberto}
+              onFechar={() => setChatAberto(null)}
             />
           )}
+
 
 
           {/* ========================================= */}
@@ -2282,6 +2316,65 @@ export default function App() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* CELULAR (WHATSAPP) */}
+              <div>
+                <label className="block text-xs font-black uppercase text-slate-800 mb-1">
+                  CELULAR (WHATSAPP):
+                </label>
+                <input
+                  type="tel"
+                  value={editPerfilCelular}
+                  onChange={(e) => setEditPerfilCelular(formatarCelular(e.target.value))}
+                  placeholder="+55 (22) 99999-9999"
+                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                />
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Usado para receber o código de acesso em duas etapas.
+                </p>
+              </div>
+
+              {/* ASSINATURA */}
+              <div>
+                <label className="block text-xs font-black uppercase text-slate-800 mb-1">
+                  ASSINATURA:
+                </label>
+                {editandoAssinatura ? (
+                  <div className="space-y-2">
+                    <PadAssinatura onChange={(dataUrl) => setEditPerfilAssinatura(dataUrl)} />
+                    <button
+                      type="button"
+                      onClick={() => setEditandoAssinatura(false)}
+                      className="w-full py-2 px-3 rounded-xl border border-slate-300 text-slate-700 font-black text-[11px] uppercase cursor-pointer"
+                    >
+                      Concluir assinatura
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {editPerfilAssinatura ? (
+                      <img
+                        src={editPerfilAssinatura}
+                        alt="Assinatura cadastrada"
+                        loading="lazy"
+                        className="w-full h-24 object-contain bg-white border border-slate-200 rounded-xl"
+                      />
+                    ) : (
+                      <p className="text-[11px] text-slate-500 bg-slate-50 border border-slate-200 rounded-xl p-3">
+                        Nenhuma assinatura cadastrada. Ela é aplicada automaticamente ao encerrar
+                        ocorrências.
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setEditandoAssinatura(true)}
+                      className="w-full py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-[11px] uppercase cursor-pointer"
+                    >
+                      {editPerfilAssinatura ? 'Refazer assinatura' : 'Adicionar assinatura'}
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* GRUPAMENTO / PERFIL */}

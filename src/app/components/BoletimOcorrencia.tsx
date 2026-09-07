@@ -12,6 +12,8 @@ import {
   Check,
   X,
   Car,
+  Image as ImageIcon,
+
 } from 'lucide-react';
 import { OrdemServico, UsuarioCadastrado, MembroEquipe } from '../types';
 import { GRUPAMENTOS } from '../data/grupamentos';
@@ -74,6 +76,8 @@ export const BoletimOcorrencia: React.FC<BoletimOcorrenciaProps> = ({
   const [escolhendoApoio, setEscolhendoApoio] = useState(false);
   const [apoioEnviado, setApoioEnviado] = useState<string | null>(ordem.apoioGrupamento || null);
   const inputFotoRef = useRef<HTMLInputElement>(null);
+  const inputGaleriaRef = useRef<HTMLInputElement>(null);
+
 
   const equipeFinal = ordem.equipe && ordem.equipe.length > 0 ? ordem.equipe : equipe;
   const prefixo = ordem.viaturaPrefixo || viaturaPrefixo;
@@ -141,14 +145,26 @@ export const BoletimOcorrencia: React.FC<BoletimOcorrenciaProps> = ({
 
   const handleFotos = async (lista: FileList | null) => {
     if (!lista || lista.length === 0) return;
-    const novas: string[] = [];
-    for (const arquivo of Array.from(lista)) {
-      novas.push(await comprimirFoto(arquivo));
+    try {
+      const novas: string[] = [];
+      for (const arquivo of Array.from(lista)) {
+        if (!arquivo.type.startsWith('image/')) continue;
+        novas.push(await comprimirFoto(arquivo));
+      }
+      if (novas.length === 0) {
+        setAviso('Nenhuma imagem válida foi selecionada.');
+        return;
+      }
+      const todas = [...fotos, ...novas];
+      setFotos(todas);
+      await persistir({ fotos: todas, relato });
+      setAviso(`${novas.length} foto(s) anexada(s) e salva(s) no boletim.`);
+      window.setTimeout(() => setAviso(null), 3000);
+    } catch {
+      setAviso('Não foi possível anexar a foto. Verifique a permissão da câmera e tente novamente.');
     }
-    const todas = [...fotos, ...novas];
-    setFotos(todas);
-    await persistir({ fotos: todas, relato });
   };
+
 
   const handleReboque = async () => {
     if (reboque) return;
@@ -284,7 +300,7 @@ export const BoletimOcorrencia: React.FC<BoletimOcorrenciaProps> = ({
         />
 
         {/* BOTÕES DE AÇÃO NO LOCAL */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <button
             type="button"
             onClick={() => inputFotoRef.current?.click()}
@@ -298,13 +314,33 @@ export const BoletimOcorrencia: React.FC<BoletimOcorrenciaProps> = ({
             type="file"
             accept="image/*"
             capture="environment"
-            multiple
             className="hidden"
             onChange={(e) => {
-              handleFotos(e.target.files);
+              void handleFotos(e.target.files);
               e.target.value = '';
             }}
           />
+
+          <button
+            type="button"
+            onClick={() => inputGaleriaRef.current?.click()}
+            className="py-3 px-4 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <ImageIcon className="w-4 h-4" />
+            <span>Galeria</span>
+          </button>
+          <input
+            ref={inputGaleriaRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              void handleFotos(e.target.files);
+              e.target.value = '';
+            }}
+          />
+
 
           <button
             type="button"
