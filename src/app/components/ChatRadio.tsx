@@ -73,7 +73,8 @@ export const ChatRadio: React.FC<ChatRadioProps> = ({
   };
 
   useEffect(() => {
-    if (!canal) {
+    // Quem envia sugestão nunca vê o conteúdo do canal.
+    if (!canal || (modo === 'sugestoes' && !ehDesenvolvedor)) {
       setMensagens([]);
       return;
     }
