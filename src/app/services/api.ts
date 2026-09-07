@@ -22,7 +22,8 @@ async function chamar<T = any>(payload: Record<string, unknown>): Promise<T | nu
     const data = await res.json();
     if (!res.ok) {
       console.warn('[API] Resposta com erro:', data);
-      return null;
+      // Devolve o corpo para que a tela possa mostrar a mensagem exata do servidor.
+      return (data && typeof data === 'object' && 'error' in data ? (data as T) : null);
     }
     return data as T;
   } catch (err) {
@@ -108,6 +109,25 @@ export async function zerarCadastrosServidor(): Promise<UsuarioCadastrado[] | nu
     return data.usuarios;
   }
   return null;
+}
+
+/** LOGIN EM DUAS ETAPAS: envia o código de 6 dígitos ao WhatsApp cadastrado. */
+export async function enviarCodigoLogin(
+  matricula: string
+): Promise<{ success: boolean; celular?: string; error?: string }> {
+  const data = await chamar<any>({ acao: 'auth.enviarCodigo', matricula });
+  if (data?.success) return { success: true, celular: data.celular };
+  return { success: false, error: data?.error || 'Não foi possível enviar o código agora.' };
+}
+
+/** LOGIN EM DUAS ETAPAS: confere o código digitado pelo agente. */
+export async function verificarCodigoLogin(
+  matricula: string,
+  codigo: string
+): Promise<{ success: boolean; error?: string }> {
+  const data = await chamar<any>({ acao: 'auth.verificarCodigo', matricula, codigo });
+  if (data?.success) return { success: true };
+  return { success: false, error: data?.error || 'Código inválido.' };
 }
 
 /** POSTOS DE SERVIÇO: busca ocupação atual. */

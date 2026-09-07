@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Lock, Eye, EyeOff, LogIn, UserPlus, ArrowLeft, LogOut, CheckCircle2, AlertCircle, Shield, Droplets, Users, X, Pencil, Camera, Trash2, Upload, Crop, Navigation, Radio } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, LogIn, UserPlus, ArrowLeft, LogOut, CheckCircle2, AlertCircle, Shield, Droplets, Users, X, Pencil, Camera, Trash2, Upload, Crop, Navigation, Radio, Phone, MessageCircle, ShieldCheck } from 'lucide-react';
 
 import { Screen, FuncaoPosto, SiglaGrupamento, UsuarioCadastrado, MapaOcupacaoPostos, OcupantePosto, Viatura, MembroEquipe } from './types';
 import { GRUPAMENTOS, MATRICULA_DESENVOLVEDOR } from './data/grupamentos';
@@ -18,6 +18,8 @@ import {
   excluirViaturaServidor,
   fetchOrdensServidor,
   fetchChecklistsServidor,
+  enviarCodigoLogin,
+  verificarCodigoLogin,
 } from './services/api';
 import { gerarLivroAtaPdf } from './services/livroAtaPdf';
 import { processarFotoPerfil, lerArquivoParaEdicao } from './services/imageUtils';
@@ -36,6 +38,21 @@ import { BannerNotificacoes } from './components/BannerNotificacoes';
 import { ChatRadio } from './components/ChatRadio';
 
 
+
+/** Formata o celular sempre iniciando pelo código do país +55. */
+function formatarCelular(valor: string) {
+  const d = valor.replace(/\D/g, '').replace(/^55/, '').slice(0, 11);
+  if (!d) return '+55 ';
+  if (d.length <= 2) return `+55 (${d}`;
+  if (d.length <= 7) return `+55 (${d.slice(0, 2)}) ${d.slice(2)}`;
+  return `+55 (${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+}
+
+/** Retorna apenas os dígitos do celular no formato 55DDDNÚMERO. */
+function celularDigitos(valor: string) {
+  const d = valor.replace(/\D/g, '').replace(/^55/, '');
+  return d ? `55${d}` : '';
+}
 
 /** Tipos sanguíneos disponíveis no cadastro. */
 const TIPOS_SANGUINEOS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -152,6 +169,15 @@ export default function App() {
   const [imagemParaCortarCadastro, setImagemParaCortarCadastro] = useState<string | null>(null);
   const cadFileInputRef = useRef<HTMLInputElement | null>(null);
   const [cadSenha, setCadSenha] = useState('');
+  const [cadCelular, setCadCelular] = useState('+55 ');
+
+  // Verificação em duas etapas (código de 6 dígitos no WhatsApp)
+  const [usuarioAguardandoCodigo, setUsuarioAguardandoCodigo] = useState<UsuarioCadastrado | null>(null);
+  const [codigoDigitado, setCodigoDigitado] = useState('');
+  const [codigoErro, setCodigoErro] = useState<string | null>(null);
+  const [codigoInfo, setCodigoInfo] = useState<string | null>(null);
+  const [enviandoCodigo, setEnviandoCodigo] = useState(false);
+  const [verificandoCodigo, setVerificandoCodigo] = useState(false);
   const [cadSuccessMsg, setCadSuccessMsg] = useState<string | null>(null);
   const [cadAssinatura, setCadAssinatura] = useState<string | null>(null);
   const [viaturaAtivaPrefixo, setViaturaAtivaPrefixo] = useState<string | null>(null);
@@ -223,9 +249,7 @@ export default function App() {
 
     // Se for o DESENVOLVEDOR (Matrícula 67549)
     if (usuarioEncontrado.matricula === MATRICULA_DESENVOLVEDOR || usuarioEncontrado.isDesenvolvedor) {
-      setUsuarioAtivo(usuarioEncontrado);
-      setCurrentScreen('dev-menu');
-      registrarPush(usuarioEncontrado.matricula);
+      await iniciarVerificacao(usuarioEncontrado);
       return;
     }
 
@@ -240,10 +264,83 @@ export default function App() {
       return;
     }
 
-    // Acesso liberado para usuário regular autorizado
-    setUsuarioAtivo(usuarioEncontrado);
-    setCurrentScreen('menu');
-    registrarPush(usuarioEncontrado.matricula);
+    // Acesso liberado: antes do acesso, confirma o código enviado ao WhatsApp
+    await iniciarVerificacao(usuarioEncontrado);
+  };
+
+  /** Libera o acesso após a senha e o código confirmados. */
+  const liberarAcesso = (usuario: UsuarioCadastrado) => {
+    setUsuarioAtivo(usuario);
+    setCurrentScreen(
+      usuario.matricula === MATRICULA_DESENVOLVEDOR || usuario.isDesenvolvedor ? 'dev-menu' : 'menu'
+    );
+    registrarPush(usuario.matricula);
+    setUsuarioAguardandoCodigo(null);
+    setCodigoDigitado('');
+    setPassword('');
+  };
+
+  /** Segunda etapa: gera e envia o código de 6 dígitos ao WhatsApp do agente. */
+  const iniciarVerificacao = async (usuario: UsuarioCadastrado) => {
+    // Sem celular cadastrado (cadastros antigos), o acesso segue direto pela senha.
+    if (!usuario.celular) {
+      liberarAcesso(usuario);
+      return;
+    }
+
+    setUsuarioAguardandoCodigo(usuario);
+    setCodigoDigitado('');
+    setCodigoErro(null);
+    setCodigoInfo(null);
+    setCurrentScreen('verificacao');
+    setEnviandoCodigo(true);
+    const envio = await enviarCodigoLogin(usuario.matricula);
+    setEnviandoCodigo(false);
+    if (envio.success) {
+      setCodigoInfo(`Código enviado para o WhatsApp ${envio.celular ?? 'cadastrado'}.`);
+    } else {
+      setCodigoErro(envio.error ?? 'Não foi possível enviar o código.');
+    }
+  };
+
+  /** Confere o código digitado pelo agente. */
+  const confirmarCodigo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!usuarioAguardandoCodigo) return;
+    if (codigoDigitado.replace(/\D/g, '').length !== 6) {
+      setCodigoErro('Digite os 6 dígitos recebidos no WhatsApp.');
+      return;
+    }
+    setCodigoErro(null);
+    setVerificandoCodigo(true);
+    const r = await verificarCodigoLogin(usuarioAguardandoCodigo.matricula, codigoDigitado);
+    setVerificandoCodigo(false);
+    if (r.success) {
+      liberarAcesso(usuarioAguardandoCodigo);
+    } else {
+      setCodigoErro(r.error ?? 'Código inválido.');
+    }
+  };
+
+  /** Reenvia o código para o WhatsApp. */
+  const reenviarCodigo = async () => {
+    if (!usuarioAguardandoCodigo) return;
+    setCodigoErro(null);
+    setCodigoInfo(null);
+    setEnviandoCodigo(true);
+    const envio = await enviarCodigoLogin(usuarioAguardandoCodigo.matricula);
+    setEnviandoCodigo(false);
+    if (envio.success) setCodigoInfo(`Novo código enviado para o WhatsApp ${envio.celular ?? 'cadastrado'}.`);
+    else setCodigoErro(envio.error ?? 'Não foi possível enviar o código.');
+  };
+
+  /** Cancela a verificação e volta ao login. */
+  const cancelarVerificacao = () => {
+    setUsuarioAguardandoCodigo(null);
+    setCodigoDigitado('');
+    setCodigoErro(null);
+    setCodigoInfo(null);
+    setCurrentScreen('login');
   };
 
   const matriculaDuplicada =
@@ -257,6 +354,7 @@ export default function App() {
     !matriculaDuplicada &&
     cadTipoSanguineo.trim() !== '' &&
     Boolean(cadGrupamento) &&
+    celularDigitos(cadCelular).length === 13 &&
     cadSenha.trim() !== '';
 
   const handleCadastro = async (e: React.FormEvent) => {
@@ -288,6 +386,10 @@ export default function App() {
       setAuthError('Por favor, selecione seu GRUPAMENTO.');
       return;
     }
+    if (celularDigitos(cadCelular).length !== 13) {
+      setAuthError('Informe um CELULAR válido com DDD (ex: +55 (22) 99999-9999).');
+      return;
+    }
     if (!cadSenha.trim()) {
       setAuthError('Por favor, crie uma SENHA de acesso.');
       return;
@@ -307,6 +409,7 @@ export default function App() {
       nomeDeGuerra: cadNomeDeGuerra.trim().toUpperCase(),
       matricula: mat,
       tipoSanguineo: cadTipoSanguineo.trim().toUpperCase(),
+      celular: celularDigitos(cadCelular),
       grupamento: cadGrupamento,
       foto: cadFoto,
       assinatura,
@@ -864,6 +967,88 @@ export default function App() {
           {/* - TIPO SANGUÍNEO: preenchimento manual                                    */}
           {/* - MATRÍCULA: preenchimento manual                                         */}
           {/* ========================================================================= */}
+          {/* ========================================= */}
+          {/* TELA: VERIFICAÇÃO EM DUAS ETAPAS          */}
+          {/* ========================================= */}
+          {currentScreen === 'verificacao' && (
+            <div id="card-verificacao" className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 sm:p-8">
+              <div className="flex flex-col items-center text-center mb-6">
+                <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center mb-3">
+                  <MessageCircle className="w-7 h-7 text-emerald-600" />
+                </div>
+                <h2 className="text-xl font-bold text-slate-900 uppercase">Confirmação de Acesso</h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Enviamos um código de 6 dígitos para o seu WhatsApp cadastrado.
+                </p>
+              </div>
+
+              {codigoInfo && (
+                <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium rounded-xl flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                  <span>{codigoInfo}</span>
+                </div>
+              )}
+
+              {codigoErro && (
+                <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium rounded-xl flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                  <span>{codigoErro}</span>
+                </div>
+              )}
+
+              <form onSubmit={confirmarCodigo} className="space-y-4" noValidate>
+                <div className="space-y-1">
+                  <label
+                    htmlFor="input-codigo"
+                    className="block text-xs font-black uppercase tracking-wider text-slate-800"
+                  >
+                    CÓDIGO DE 6 DÍGITOS
+                  </label>
+                  <input
+                    id="input-codigo"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    value={codigoDigitado}
+                    onChange={(e) => setCodigoDigitado(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="000000"
+                    className="w-full px-3.5 py-3 border border-slate-300 rounded-xl text-center text-2xl font-black tracking-[0.5em] text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600"
+                  />
+                </div>
+
+                <button
+                  id="btn-confirmar-codigo"
+                  type="submit"
+                  disabled={verificandoCodigo || enviandoCodigo}
+                  className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-black uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>{verificandoCodigo ? 'Confirmando...' : 'Confirmar e Entrar'}</span>
+                </button>
+
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={cancelarVerificacao}
+                    className="px-3 py-2 rounded-lg text-xs font-bold uppercase text-slate-600 hover:bg-slate-100 flex items-center gap-1 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Voltar</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={reenviarCodigo}
+                    disabled={enviandoCodigo}
+                    className="px-3 py-2 rounded-lg text-xs font-bold uppercase text-blue-700 hover:bg-blue-50 disabled:opacity-60 cursor-pointer"
+                  >
+                    {enviandoCodigo ? 'Enviando...' : 'Reenviar código'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
           {currentScreen === 'cadastrar' && (
             <div id="card-cadastro" className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 sm:p-7">
               <div className="text-center mb-5">
@@ -1095,7 +1280,36 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* 5. GRUPAMENTO: SELEÇÃO COM BRASÃO */}
+                {/* 5. CELULAR (WhatsApp) */}
+                <div>
+                  <label
+                    htmlFor="input-cad-celular"
+                    className="block text-xs font-black uppercase text-slate-800 mb-1 tracking-wider"
+                  >
+                    CELULAR (WHATSAPP):
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-emerald-600">
+                      <Phone className="w-4 h-4" />
+                    </div>
+                    <input
+                      id="input-cad-celular"
+                      type="tel"
+                      inputMode="numeric"
+                      value={cadCelular}
+                      onFocus={() => { if (!cadCelular.trim()) setCadCelular('+55 '); }}
+                      onChange={(e) => setCadCelular(formatarCelular(e.target.value))}
+                      placeholder="+55 (22) 99999-9999"
+                      className="w-full pl-10 pr-3.5 py-3 border border-slate-300 rounded-xl text-sm sm:text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                      required
+                    />
+                  </div>
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    O código de acesso será enviado neste WhatsApp a cada login.
+                  </p>
+                </div>
+
+                {/* 6. GRUPAMENTO: SELEÇÃO COM BRASÃO */}
                 <div>
                   <label className="block text-xs font-black uppercase text-slate-800 mb-2 tracking-wider">
                     GRUPAMENTO (SELECIONE O SEU):
