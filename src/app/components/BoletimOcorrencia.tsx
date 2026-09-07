@@ -141,14 +141,26 @@ export const BoletimOcorrencia: React.FC<BoletimOcorrenciaProps> = ({
 
   const handleFotos = async (lista: FileList | null) => {
     if (!lista || lista.length === 0) return;
-    const novas: string[] = [];
-    for (const arquivo of Array.from(lista)) {
-      novas.push(await comprimirFoto(arquivo));
+    try {
+      const novas: string[] = [];
+      for (const arquivo of Array.from(lista)) {
+        if (!arquivo.type.startsWith('image/')) continue;
+        novas.push(await comprimirFoto(arquivo));
+      }
+      if (novas.length === 0) {
+        setAviso('Nenhuma imagem válida foi selecionada.');
+        return;
+      }
+      const todas = [...fotos, ...novas];
+      setFotos(todas);
+      await persistir({ fotos: todas, relato });
+      setAviso(`${novas.length} foto(s) anexada(s) e salva(s) no boletim.`);
+      window.setTimeout(() => setAviso(null), 3000);
+    } catch {
+      setAviso('Não foi possível anexar a foto. Verifique a permissão da câmera e tente novamente.');
     }
-    const todas = [...fotos, ...novas];
-    setFotos(todas);
-    await persistir({ fotos: todas, relato });
   };
+
 
   const handleReboque = async () => {
     if (reboque) return;
