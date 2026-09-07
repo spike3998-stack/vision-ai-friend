@@ -99,7 +99,7 @@ export function salvarOcupacaoPostos(mapa: MapaOcupacaoPostos): void {
 // ==========================================
 // CONTROLE DE VIATURAS OPERACIONAIS
 // ==========================================
-const STORAGE_KEY_VIATURAS = 'gm_arraial_viaturas_v1';
+const STORAGE_KEY_VIATURAS = 'gm_arraial_viaturas_v2';
 
 /** Sem viaturas de exemplo: o cadastro é feito pelo próprio app. */
 export const VIATURAS_INICIAIS: Viatura[] = [];
@@ -132,7 +132,7 @@ export function salvarViaturas(viaturas: Viatura[]): void {
 // ==========================================
 // CONTROLE DE CHECK-LISTS DE VIATURAS
 // ==========================================
-const STORAGE_KEY_CHECKLISTS = 'gm_arraial_checklists_viaturas_v1';
+const STORAGE_KEY_CHECKLISTS = 'gm_arraial_checklists_viaturas_v2';
 
 /** Sem check-lists de exemplo: os registros são criados pelos motoristas. */
 export const CHECKLISTS_INICIAIS: ChecklistViatura[] = [];
