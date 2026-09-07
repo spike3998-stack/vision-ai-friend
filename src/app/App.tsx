@@ -967,6 +967,88 @@ export default function App() {
           {/* - TIPO SANGUÍNEO: preenchimento manual                                    */}
           {/* - MATRÍCULA: preenchimento manual                                         */}
           {/* ========================================================================= */}
+          {/* ========================================= */}
+          {/* TELA: VERIFICAÇÃO EM DUAS ETAPAS          */}
+          {/* ========================================= */}
+          {currentScreen === 'verificacao' && (
+            <div id="card-verificacao" className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 sm:p-8">
+              <div className="flex flex-col items-center text-center mb-6">
+                <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center mb-3">
+                  <MessageCircle className="w-7 h-7 text-emerald-600" />
+                </div>
+                <h2 className="text-xl font-bold text-slate-900 uppercase">Confirmação de Acesso</h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Enviamos um código de 6 dígitos para o seu WhatsApp cadastrado.
+                </p>
+              </div>
+
+              {codigoInfo && (
+                <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium rounded-xl flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                  <span>{codigoInfo}</span>
+                </div>
+              )}
+
+              {codigoErro && (
+                <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium rounded-xl flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                  <span>{codigoErro}</span>
+                </div>
+              )}
+
+              <form onSubmit={confirmarCodigo} className="space-y-4" noValidate>
+                <div className="space-y-1">
+                  <label
+                    htmlFor="input-codigo"
+                    className="block text-xs font-black uppercase tracking-wider text-slate-800"
+                  >
+                    CÓDIGO DE 6 DÍGITOS
+                  </label>
+                  <input
+                    id="input-codigo"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    value={codigoDigitado}
+                    onChange={(e) => setCodigoDigitado(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="000000"
+                    className="w-full px-3.5 py-3 border border-slate-300 rounded-xl text-center text-2xl font-black tracking-[0.5em] text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600"
+                  />
+                </div>
+
+                <button
+                  id="btn-confirmar-codigo"
+                  type="submit"
+                  disabled={verificandoCodigo || enviandoCodigo}
+                  className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-black uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>{verificandoCodigo ? 'Confirmando...' : 'Confirmar e Entrar'}</span>
+                </button>
+
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={cancelarVerificacao}
+                    className="px-3 py-2 rounded-lg text-xs font-bold uppercase text-slate-600 hover:bg-slate-100 flex items-center gap-1 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Voltar</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={reenviarCodigo}
+                    disabled={enviandoCodigo}
+                    className="px-3 py-2 rounded-lg text-xs font-bold uppercase text-blue-700 hover:bg-blue-50 disabled:opacity-60 cursor-pointer"
+                  >
+                    {enviandoCodigo ? 'Enviando...' : 'Reenviar código'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
           {currentScreen === 'cadastrar' && (
             <div id="card-cadastro" className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 sm:p-7">
               <div className="text-center mb-5">
@@ -1198,7 +1280,36 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* 5. GRUPAMENTO: SELEÇÃO COM BRASÃO */}
+                {/* 5. CELULAR (WhatsApp) */}
+                <div>
+                  <label
+                    htmlFor="input-cad-celular"
+                    className="block text-xs font-black uppercase text-slate-800 mb-1 tracking-wider"
+                  >
+                    CELULAR (WHATSAPP):
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-emerald-600">
+                      <Phone className="w-4 h-4" />
+                    </div>
+                    <input
+                      id="input-cad-celular"
+                      type="tel"
+                      inputMode="numeric"
+                      value={cadCelular}
+                      onFocus={() => { if (!cadCelular.trim()) setCadCelular('+55 '); }}
+                      onChange={(e) => setCadCelular(formatarCelular(e.target.value))}
+                      placeholder="+55 (22) 99999-9999"
+                      className="w-full pl-10 pr-3.5 py-3 border border-slate-300 rounded-xl text-sm sm:text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                      required
+                    />
+                  </div>
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    O código de acesso será enviado neste WhatsApp a cada login.
+                  </p>
+                </div>
+
+                {/* 6. GRUPAMENTO: SELEÇÃO COM BRASÃO */}
                 <div>
                   <label className="block text-xs font-black uppercase text-slate-800 mb-2 tracking-wider">
                     GRUPAMENTO (SELECIONE O SEU):
