@@ -30,8 +30,15 @@ function blobParaDataUrl(blob: Blob): Promise<string> {
   });
 }
 
-export const ChatRadio: React.FC<ChatRadioProps> = ({ usuarioAtivo, usuarios, onFechar }) => {
-  const [aba, setAba] = useState<Aba>('geral');
+export const ChatRadio: React.FC<ChatRadioProps> = ({
+  usuarioAtivo,
+  usuarios,
+  onFechar,
+  modo = 'radio',
+}) => {
+  const ehDesenvolvedor =
+    Boolean(usuarioAtivo.isDesenvolvedor) || usuarioAtivo.matricula === MATRICULA_DESENVOLVEDOR;
+  const [aba, setAba] = useState<Aba>(modo === 'ajuda' ? 'individual' : 'geral');
   const [contato, setContato] = useState<UsuarioCadastrado | null>(null);
   const [busca, setBusca] = useState('');
   const [mensagens, setMensagens] = useState<MensagemChat[]>([]);
@@ -46,10 +53,19 @@ export const ChatRadio: React.FC<ChatRadioProps> = ({ usuarioAtivo, usuarios, on
   const fimListaRef = useRef<HTMLDivElement | null>(null);
 
   const canal = useMemo(() => {
+    if (modo === 'sugestoes') return 'sugestoes';
+    if (modo === 'ajuda') {
+      // O desenvolvedor escolhe com qual agente falar; os demais falam direto com ele.
+      if (ehDesenvolvedor) {
+        return contato ? canalParticular(usuarioAtivo.matricula, contato.matricula) : null;
+      }
+      return canalParticular(usuarioAtivo.matricula, MATRICULA_DESENVOLVEDOR);
+    }
     if (aba === 'geral') return 'geral';
     if (aba === 'grupamento') return `grupamento:${usuarioAtivo.grupamento}`;
     return contato ? canalParticular(usuarioAtivo.matricula, contato.matricula) : null;
-  }, [aba, contato, usuarioAtivo]);
+  }, [aba, contato, usuarioAtivo, modo, ehDesenvolvedor]);
+
 
   const carregar = async (c: string) => {
     const lista = await fetchMensagensChat(c);
