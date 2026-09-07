@@ -139,6 +139,55 @@ function agora() {
   })}`;
 }
 
+
+/** Mantém apenas dígitos (formato aceito pelas APIs de WhatsApp). */
+function soDigitos(valor: string) {
+  return String(valor ?? "").replace(/\D/g, "");
+}
+
+/**
+ * Envia mensagem de WhatsApp por API externa (Z-API / Evolution).
+ * O endpoint completo fica em WHATSAPP_API_URL e o token em WHATSAPP_API_TOKEN.
+ */
+async function enviarWhatsApp(numero: string, texto: string) {
+  const url = process.env["WHATSAPP_API_URL"];
+  const token = process.env["WHATSAPP_API_TOKEN"];
+  if (!url || !token) {
+    console.warn("[WhatsApp] API não configurada (WHATSAPP_API_URL / WHATSAPP_API_TOKEN).");
+    return { ok: false, erro: "Serviço de WhatsApp não configurado." };
+  }
+  const phone = soDigitos(numero);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        // Z-API usa Client-Token; Evolution usa apikey.
+        "Client-Token": token,
+        apikey: token,
+        Authorization: `Bearer ${token}`,
+      },
+      // Envia os dois formatos: Z-API (phone/message) e Evolution (number/text).
+      body: JSON.stringify({ phone, message: texto, number: phone, text: texto }),
+    });
+    const corpo = await res.text().catch(() => "");
+    if (!res.ok) {
+      console.warn("[WhatsApp] falha no envio:", res.status, corpo);
+      return { ok: false, erro: `Falha ao enviar (${res.status}).` };
+    }
+    return { ok: true };
+  } catch (err) {
+    console.warn("[WhatsApp] erro no envio:", err);
+    return { ok: false, erro: "Não foi possível falar com o serviço de WhatsApp." };
+  }
+}
+
+function mascararCelular(numero: string) {
+  const d = soDigitos(numero);
+  if (d.length < 4) return "número cadastrado";
+  return `••••${d.slice(-4)}`;
+}
+
 async function handle(body: any) {
   const db = await getAdmin();
   const acao = String(body?.acao ?? "");
@@ -169,6 +218,7 @@ async function handle(body: any) {
         nomeDeGuerra: String(u.nomeDeGuerra).trim().toUpperCase(),
         matricula: mat,
         tipoSanguineo: u.tipoSanguineo ? String(u.tipoSanguineo).trim().toUpperCase() : "N/I",
+        celular: u.celular ? soDigitos(String(u.celular)) : (anterior.celular ?? ""),
         grupamento: u.grupamento || "ROMU",
         foto: u.foto !== undefined ? u.foto : anterior.foto,
         senha: String(u.senha),
@@ -239,6 +289,78 @@ async function handle(body: any) {
     case "usuarios.zerar": {
       await db.from("gm_usuarios").delete().neq("matricula", MATRICULA_DESENVOLVEDOR);
       return json({ success: true, usuarios: await listarUsuarios(db) });
+    }
+
+    // ---------------- LOGIN EM DUAS ETAPAS ----------------
+    case "auth.enviarCodigo": {
+      const mat = String(body.matricula ?? "").trim();
+      if (!mat) return json({ error: "Matrícula obrigatória." }, 400);
+
+      const { data: rows } = await db
+        .from("gm_usuarios")
+        .select("dados")
+        .eq("matricula", mat)
+        .limit(1);
+      const usuario = rows?.[0]?.dados as any;
+      if (!usuario) return json({ error: "Usuário não encontrado." }, 404);
+
+      const celular = soDigitos(usuario.celular ?? "");
+      if (celular.length < 12) {
+        return json(
+          { error: "Nenhum número de WhatsApp válido está cadastrado para este agente." },
+          400,
+        );
+      }
+
+      const codigo = String(Math.floor(100000 + Math.random() * 900000));
+      const expira = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+
+      await db.from("gm_login_codigos").upsert(
+        { matricula: mat, codigo, celular, expira_em: expira, tentativas: 0, criado_em: new Date().toISOString() },
+        { onConflict: "matricula" },
+      );
+
+      const envio = await enviarWhatsApp(
+        celular,
+        `GUARDA MUNICIPAL DE ARRAIAL DO CABO\n\nSeu código de acesso é ${codigo}.\nEle vale por 5 minutos. Não compartilhe com ninguém.`,
+      );
+      if (!envio.ok) return json({ error: envio.erro }, 502);
+
+      return json({ success: true, celular: mascararCelular(celular) });
+    }
+
+    case "auth.verificarCodigo": {
+      const mat = String(body.matricula ?? "").trim();
+      const codigo = soDigitos(String(body.codigo ?? ""));
+      if (!mat || codigo.length !== 6) {
+        return json({ error: "Informe o código de 6 dígitos." }, 400);
+      }
+
+      const { data: registro } = await db
+        .from("gm_login_codigos")
+        .select("codigo, expira_em, tentativas")
+        .eq("matricula", mat)
+        .maybeSingle();
+
+      if (!registro) return json({ error: "Nenhum código pendente. Peça um novo código." }, 400);
+      if (new Date(registro.expira_em as string).getTime() < Date.now()) {
+        await db.from("gm_login_codigos").delete().eq("matricula", mat);
+        return json({ error: "Código expirado. Peça um novo código." }, 400);
+      }
+      if ((registro.tentativas as number) >= 5) {
+        await db.from("gm_login_codigos").delete().eq("matricula", mat);
+        return json({ error: "Muitas tentativas. Peça um novo código." }, 429);
+      }
+      if (String(registro.codigo) !== codigo) {
+        await db
+          .from("gm_login_codigos")
+          .update({ tentativas: (registro.tentativas as number) + 1 })
+          .eq("matricula", mat);
+        return json({ error: "Código incorreto. Confira a mensagem no WhatsApp." }, 400);
+      }
+
+      await db.from("gm_login_codigos").delete().eq("matricula", mat);
+      return json({ success: true });
     }
 
     // ---------------- POSTOS ----------------
