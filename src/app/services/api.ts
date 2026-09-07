@@ -22,7 +22,8 @@ async function chamar<T = any>(payload: Record<string, unknown>): Promise<T | nu
     const data = await res.json();
     if (!res.ok) {
       console.warn('[API] Resposta com erro:', data);
-      return null;
+      // Devolve o corpo para que a tela possa mostrar a mensagem exata do servidor.
+      return (data && typeof data === 'object' && 'error' in data ? (data as T) : null);
     }
     return data as T;
   } catch (err) {
