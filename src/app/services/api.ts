@@ -1,4 +1,4 @@
-import { UsuarioCadastrado, Viatura, MapaOcupacaoPostos, ChecklistViatura, OcupantePosto, OrdemServico } from '../types';
+import { UsuarioCadastrado, Viatura, GrupamentoItem, MapaOcupacaoPostos, ChecklistViatura, OcupantePosto, OrdemServico } from '../types';
 import {
   getUsuariosArmazenados,
   salvarUsuarios,
@@ -272,4 +272,23 @@ export async function enviarMensagemChat(
 ): Promise<MensagemChat | null> {
   const data = await chamar<any>({ acao: 'chat.enviar', canal, mensagem });
   return data?.mensagem ?? null;
+}
+
+/** GRUPAMENTOS (somente o desenvolvedor edita) */
+export async function fetchGrupamentosServidor(): Promise<GrupamentoItem[]> {
+  const data = await chamar<GrupamentoItem[]>({ acao: 'grupamentos.listar' });
+  return Array.isArray(data) ? data : [];
+}
+
+export async function salvarGrupamentoServidor(
+  grupamento: Partial<GrupamentoItem>,
+  siglaAnterior?: string
+): Promise<GrupamentoItem[] | null> {
+  const data = await chamar<any>({ acao: 'grupamentos.salvar', grupamento, siglaAnterior });
+  return Array.isArray(data?.grupamentos) ? data.grupamentos : null;
+}
+
+export async function excluirGrupamentoServidor(sigla: string): Promise<GrupamentoItem[] | null> {
+  const data = await chamar<any>({ acao: 'grupamentos.excluir', sigla });
+  return Array.isArray(data?.grupamentos) ? data.grupamentos : null;
 }

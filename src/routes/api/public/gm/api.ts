@@ -451,6 +451,87 @@ async function handle(body: any) {
       return json({ success: true, postos: mapa });
     }
 
+    // ---------------- GRUPAMENTOS ----------------
+    case "grupamentos.listar": {
+      const { data } = await db
+        .from("gm_grupamentos")
+        .select("sigla, nome, imagem, ordem")
+        .order("ordem");
+      return json(
+        (data ?? []).map((g) => ({
+          sigla: g.sigla,
+          nome: g.nome,
+          imagem: g.imagem ?? "",
+        })),
+      );
+    }
+
+    case "grupamentos.salvar": {
+      const g = body.grupamento ?? {};
+      const sigla = String(g.sigla ?? "").trim().toUpperCase();
+      const nome = String(g.nome ?? "").trim();
+      if (!sigla || !nome) return json({ error: "Sigla e nome são obrigatórios." }, 400);
+
+      const siglaAnterior = String(body.siglaAnterior ?? "").trim().toUpperCase();
+      const { data: atual } = await db
+        .from("gm_grupamentos")
+        .select("ordem, imagem")
+        .eq("sigla", siglaAnterior || sigla)
+        .maybeSingle();
+
+      let ordem = atual?.ordem;
+      if (ordem === undefined || ordem === null) {
+        const { data: ultimos } = await db
+          .from("gm_grupamentos")
+          .select("ordem")
+          .order("ordem", { ascending: false })
+          .limit(1);
+        ordem = ((ultimos?.[0]?.ordem as number | undefined) ?? 0) + 1;
+      }
+
+      const imagem = g.imagem !== undefined ? String(g.imagem ?? "") : (atual?.imagem ?? "");
+
+      if (siglaAnterior && siglaAnterior !== sigla) {
+        await db.from("gm_grupamentos").delete().eq("sigla", siglaAnterior);
+      }
+
+      const { error } = await db
+        .from("gm_grupamentos")
+        .upsert({ sigla, nome, imagem, ordem }, { onConflict: "sigla" });
+      if (error) return json({ error: error.message }, 400);
+
+      const { data } = await db
+        .from("gm_grupamentos")
+        .select("sigla, nome, imagem, ordem")
+        .order("ordem");
+      return json({
+        success: true,
+        grupamentos: (data ?? []).map((x) => ({
+          sigla: x.sigla,
+          nome: x.nome,
+          imagem: x.imagem ?? "",
+        })),
+      });
+    }
+
+    case "grupamentos.excluir": {
+      const sigla = String(body.sigla ?? "").trim().toUpperCase();
+      if (!sigla) return json({ error: "Sigla obrigatória." }, 400);
+      await db.from("gm_grupamentos").delete().eq("sigla", sigla);
+      const { data } = await db
+        .from("gm_grupamentos")
+        .select("sigla, nome, imagem, ordem")
+        .order("ordem");
+      return json({
+        success: true,
+        grupamentos: (data ?? []).map((x) => ({
+          sigla: x.sigla,
+          nome: x.nome,
+          imagem: x.imagem ?? "",
+        })),
+      });
+    }
+
     // ---------------- VIATURAS ----------------
     case "viaturas.listar":
       return json(await listarViaturas(db));
