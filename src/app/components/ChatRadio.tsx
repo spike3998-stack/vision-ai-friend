@@ -268,9 +268,64 @@ export const ChatRadio: React.FC<ChatRadioProps> = ({
 
         {modo === 'sugestoes' && (
           <p className="text-[11px] text-slate-600 bg-amber-50 border-b border-amber-200 px-3 py-2">
-            Escreva aqui sua sugestão de melhoria para o aplicativo. Todas as mensagens ficam
-            registradas neste canal.
+            {feedSugestoes
+              ? 'Sugestões enviadas pelos agentes. Leia e feche a janela quando quiser; elas ficam guardadas aqui.'
+              : 'Escreva sua sugestão de melhoria. Ela é enviada de forma reservada ao desenvolvedor.'}
           </p>
+        )}
+
+        {formularioSugestao && (
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {sugestaoEnviada ? (
+              <div className="text-center py-10 space-y-3">
+                <Lightbulb className="w-10 h-10 text-amber-500 mx-auto" />
+                <p className="text-sm font-black uppercase text-slate-900">Sugestão enviada</p>
+                <p className="text-xs text-slate-500">
+                  Obrigado! Sua sugestão foi encaminhada ao desenvolvedor.
+                </p>
+                <div className="flex gap-2 justify-center pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setSugestaoEnviada(false)}
+                    className="px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-700 text-xs font-black uppercase cursor-pointer"
+                  >
+                    Enviar outra
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onFechar}
+                    className="px-3.5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-black uppercase cursor-pointer"
+                  >
+                    Fechar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {erro && (
+                  <p className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-2">
+                    {erro}
+                  </p>
+                )}
+                <textarea
+                  value={texto}
+                  onChange={(e) => setTexto(e.target.value)}
+                  rows={7}
+                  placeholder="Descreva sua sugestão de melhoria para o aplicativo"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-500 resize-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => void enviarSugestao()}
+                  disabled={!texto.trim() || enviando}
+                  className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-black uppercase tracking-wider cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <Send className="w-4 h-4" />
+                  {enviando ? 'Enviando...' : 'Enviar sugestão'}
+                </button>
+              </>
+            )}
+          </div>
         )}
 
         {modo === 'ajuda' && !ehDesenvolvedor && (
