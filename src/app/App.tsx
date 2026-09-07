@@ -249,9 +249,7 @@ export default function App() {
 
     // Se for o DESENVOLVEDOR (Matrícula 67549)
     if (usuarioEncontrado.matricula === MATRICULA_DESENVOLVEDOR || usuarioEncontrado.isDesenvolvedor) {
-      setUsuarioAtivo(usuarioEncontrado);
-      setCurrentScreen('dev-menu');
-      registrarPush(usuarioEncontrado.matricula);
+      await iniciarVerificacao(usuarioEncontrado);
       return;
     }
 
@@ -266,10 +264,83 @@ export default function App() {
       return;
     }
 
-    // Acesso liberado para usuário regular autorizado
-    setUsuarioAtivo(usuarioEncontrado);
-    setCurrentScreen('menu');
-    registrarPush(usuarioEncontrado.matricula);
+    // Acesso liberado: antes do acesso, confirma o código enviado ao WhatsApp
+    await iniciarVerificacao(usuarioEncontrado);
+  };
+
+  /** Libera o acesso após a senha e o código confirmados. */
+  const liberarAcesso = (usuario: UsuarioCadastrado) => {
+    setUsuarioAtivo(usuario);
+    setCurrentScreen(
+      usuario.matricula === MATRICULA_DESENVOLVEDOR || usuario.isDesenvolvedor ? 'dev-menu' : 'menu'
+    );
+    registrarPush(usuario.matricula);
+    setUsuarioAguardandoCodigo(null);
+    setCodigoDigitado('');
+    setPassword('');
+  };
+
+  /** Segunda etapa: gera e envia o código de 6 dígitos ao WhatsApp do agente. */
+  const iniciarVerificacao = async (usuario: UsuarioCadastrado) => {
+    // Sem celular cadastrado (cadastros antigos), o acesso segue direto pela senha.
+    if (!usuario.celular) {
+      liberarAcesso(usuario);
+      return;
+    }
+
+    setUsuarioAguardandoCodigo(usuario);
+    setCodigoDigitado('');
+    setCodigoErro(null);
+    setCodigoInfo(null);
+    setCurrentScreen('verificacao');
+    setEnviandoCodigo(true);
+    const envio = await enviarCodigoLogin(usuario.matricula);
+    setEnviandoCodigo(false);
+    if (envio.success) {
+      setCodigoInfo(`Código enviado para o WhatsApp ${envio.celular ?? 'cadastrado'}.`);
+    } else {
+      setCodigoErro(envio.error ?? 'Não foi possível enviar o código.');
+    }
+  };
+
+  /** Confere o código digitado pelo agente. */
+  const confirmarCodigo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!usuarioAguardandoCodigo) return;
+    if (codigoDigitado.replace(/\D/g, '').length !== 6) {
+      setCodigoErro('Digite os 6 dígitos recebidos no WhatsApp.');
+      return;
+    }
+    setCodigoErro(null);
+    setVerificandoCodigo(true);
+    const r = await verificarCodigoLogin(usuarioAguardandoCodigo.matricula, codigoDigitado);
+    setVerificandoCodigo(false);
+    if (r.success) {
+      liberarAcesso(usuarioAguardandoCodigo);
+    } else {
+      setCodigoErro(r.error ?? 'Código inválido.');
+    }
+  };
+
+  /** Reenvia o código para o WhatsApp. */
+  const reenviarCodigo = async () => {
+    if (!usuarioAguardandoCodigo) return;
+    setCodigoErro(null);
+    setCodigoInfo(null);
+    setEnviandoCodigo(true);
+    const envio = await enviarCodigoLogin(usuarioAguardandoCodigo.matricula);
+    setEnviandoCodigo(false);
+    if (envio.success) setCodigoInfo(`Novo código enviado para o WhatsApp ${envio.celular ?? 'cadastrado'}.`);
+    else setCodigoErro(envio.error ?? 'Não foi possível enviar o código.');
+  };
+
+  /** Cancela a verificação e volta ao login. */
+  const cancelarVerificacao = () => {
+    setUsuarioAguardandoCodigo(null);
+    setCodigoDigitado('');
+    setCodigoErro(null);
+    setCodigoInfo(null);
+    setCurrentScreen('login');
   };
 
   const matriculaDuplicada =
