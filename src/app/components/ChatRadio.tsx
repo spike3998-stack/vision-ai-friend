@@ -300,7 +300,7 @@ export const ChatRadio: React.FC<ChatRadioProps> = ({
           <>
             {/* MENSAGENS */}
             <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-slate-50">
-              {aba === 'individual' && contato && (
+              {contato && (modo === 'radio' ? aba === 'individual' : modo === 'ajuda') && (
                 <button
                   type="button"
                   onClick={() => setContato(null)}
