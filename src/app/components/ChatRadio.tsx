@@ -446,7 +446,9 @@ export const ChatRadio: React.FC<ChatRadioProps> = ({
             </div>
 
             {/* ENVIO */}
-            <div className="p-3 border-t border-slate-200 bg-white space-y-2">
+            <div
+              className={`p-3 border-t border-slate-200 bg-white space-y-2 ${feedSugestoes ? 'hidden' : ''}`}
+            >
               {erro && (
                 <p className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-2">
                   {erro}
