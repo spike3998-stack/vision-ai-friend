@@ -83,6 +83,33 @@ export type Database = {
         }
         Relationships: []
       }
+      gm_grupamentos: {
+        Row: {
+          atualizado_em: string
+          criado_em: string
+          imagem: string | null
+          nome: string
+          ordem: number
+          sigla: string
+        }
+        Insert: {
+          atualizado_em?: string
+          criado_em?: string
+          imagem?: string | null
+          nome: string
+          ordem?: number
+          sigla: string
+        }
+        Update: {
+          atualizado_em?: string
+          criado_em?: string
+          imagem?: string | null
+          nome?: string
+          ordem?: number
+          sigla?: string
+        }
+        Relationships: []
+      }
       gm_login_codigos: {
         Row: {
           celular: string

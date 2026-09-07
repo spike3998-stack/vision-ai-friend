@@ -15,7 +15,8 @@ export type Screen =
   | 'dev-menu'
   | 'dev-autorizar'
   | 'dev-consultar'
-  | 'dev-viaturas';
+  | 'dev-viaturas'
+  | 'dev-grupamentos';
 
 export type StatusOrdemServico = 'aguardando' | 'aceita' | 'recusada' | 'espera';
 
@@ -90,14 +91,8 @@ export type FuncaoPosto =
   | 'FÓRUM'
   | 'CREAS';
 
-export type SiglaGrupamento =
-  | 'GTRAN'
-  | 'ROMU'
-  | 'GRES'
-  | 'GOC'
-  | 'GID'
-  | 'CENTRAL'
-  | 'INSPETORIA';
+/** Sigla do grupamento — livre, pois o desenvolvedor pode criar novos. */
+export type SiglaGrupamento = string;
 
 export type StatusCadastro = 'pendente' | 'autorizado' | 'negado';
 
