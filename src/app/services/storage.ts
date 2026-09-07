@@ -134,58 +134,8 @@ export function salvarViaturas(viaturas: Viatura[]): void {
 // ==========================================
 const STORAGE_KEY_CHECKLISTS = 'gm_arraial_checklists_viaturas_v1';
 
-export const CHECKLISTS_INICIAIS: ChecklistViatura[] = [
-  {
-    id: 'chk-init-01',
-    viaturaId: 'vtr-romu-01',
-    prefixoViatura: 'ROMU 01',
-    placaViatura: 'RIO-1A23',
-    modeloViatura: 'Renault Duster 4x4',
-    motoristaNome: 'SILVA',
-    motoristaMatricula: '10234',
-    motoristaGrupamento: 'ROMU',
-    dataHora: '03/09/2026 07:45',
-    kmAtual: '42.150 km',
-    nivelCombustivel: 'cheio',
-    pneusEstepe: 'conforme',
-    iluminacaoSirene: 'conforme',
-    freiosDirecao: 'conforme',
-    oleoFluidos: 'conforme',
-    limpeza: 'limpo',
-    avariasLataria: false,
-    detalhesAvarias: '',
-    radioComunicador: true,
-    documentosViatura: true,
-    kitSeguranca: true,
-    observacoesGerais: 'Viatura inspecionada no início do plantão diurno. Tudo operante.',
-    statusGeral: 'aprovada',
-  },
-  {
-    id: 'chk-init-02',
-    viaturaId: 'vtr-gtran-02',
-    prefixoViatura: 'GTRAN 02',
-    placaViatura: 'RIO-4B56',
-    modeloViatura: 'Chevrolet Spin',
-    motoristaNome: 'COSTA',
-    motoristaMatricula: '20456',
-    motoristaGrupamento: 'GTRAN',
-    dataHora: '02/09/2026 19:15',
-    kmAtual: '38.800 km',
-    nivelCombustivel: '3_4',
-    pneusEstepe: 'conforme',
-    iluminacaoSirene: 'conforme',
-    freiosDirecao: 'conforme',
-    oleoFluidos: 'conforme',
-    limpeza: 'regular',
-    avariasLataria: true,
-    detalhesAvarias: 'Pequeno arranhão pré-existente no para-choque traseiro lado direito.',
-    radioComunicador: true,
-    documentosViatura: true,
-    kitSeguranca: true,
-    observacoesGerais: 'Cones e fita zebrada presentes no porta-malas.',
-    statusGeral: 'aprovada_com_restricoes',
-  },
-];
+/** Sem check-lists de exemplo: os registros são criados pelos motoristas. */
+export const CHECKLISTS_INICIAIS: ChecklistViatura[] = [];
 
 export function getChecklistsArmazenados(): ChecklistViatura[] {
   try {
