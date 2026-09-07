@@ -814,15 +814,33 @@ export default function App() {
           )}
 
           {usuarioAtivo && currentScreen !== 'login' && currentScreen !== 'cadastrar' && currentScreen !== 'assinatura' && (
-            <div className="flex justify-end mb-3">
+            <div className="flex justify-end gap-2 mb-3">
               <button
                 type="button"
-                onClick={() => setChatAberto(true)}
+                onClick={() => setChatAberto('radio')}
                 className="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-sm"
                 title="Rádio de comunicação"
               >
                 <Radio className="w-4 h-4 text-blue-400" />
                 <span>Rádio</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setChatAberto('ajuda')}
+                className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-sm"
+                title="Ajuda com o aplicativo"
+              >
+                <LifeBuoy className="w-4 h-4" />
+                <span>Ajuda</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setChatAberto('sugestoes')}
+                className="px-3.5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-black uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-sm"
+                title="Sugestões de melhoria"
+              >
+                <Lightbulb className="w-4 h-4" />
+                <span>Sugestões</span>
               </button>
             </div>
           )}
@@ -831,9 +849,11 @@ export default function App() {
             <ChatRadio
               usuarioAtivo={usuarioAtivo}
               usuarios={usuarios}
-              onFechar={() => setChatAberto(false)}
+              modo={chatAberto}
+              onFechar={() => setChatAberto(null)}
             />
           )}
+
 
 
           {/* ========================================= */}
