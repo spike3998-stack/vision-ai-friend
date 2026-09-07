@@ -150,33 +150,43 @@ function soDigitos(valor: string) {
  * O endpoint completo fica em WHATSAPP_API_URL e o token em WHATSAPP_API_TOKEN.
  */
 async function enviarWhatsApp(numero: string, texto: string) {
-  const url = process.env["WHATSAPP_API_URL"];
-  const token = process.env["WHATSAPP_API_TOKEN"];
-  // Z-API: o token de segurança da conta vai no header Client-Token.
-  const clientToken = process.env["WHATSAPP_CLIENT_TOKEN"] || token;
+  const url = process.env["WHATSAPP_API_URL"]?.trim();
+  const token = process.env["WHATSAPP_API_TOKEN"]?.trim();
+  // Na Z-API, o token da instância e o Client-Token são credenciais diferentes.
+  const clientToken = process.env["WHATSAPP_CLIENT_TOKEN"]?.trim();
   if (!url || !token) {
     console.warn("[WhatsApp] API não configurada (WHATSAPP_API_URL / WHATSAPP_API_TOKEN).");
     return { ok: false, erro: "Serviço de WhatsApp não configurado." };
+  }
+  const ehZapi = /(^|\.)z-api\.io/i.test(new URL(url).hostname);
+  if (ehZapi && !clientToken) {
+    console.warn("[WhatsApp] WHATSAPP_CLIENT_TOKEN não configurado para a Z-API.");
+    return { ok: false, erro: "Token de segurança do WhatsApp não configurado." };
   }
   const phone = soDigitos(numero);
   try {
     const res = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        // Z-API usa Client-Token; Evolution usa apikey.
-        "Client-Token": clientToken as string,
-        apikey: token,
-        Authorization: `Bearer ${token}`,
-      },
-      // Envia os dois formatos: Z-API (phone/message) e Evolution (number/text).
-      body: JSON.stringify({ phone, message: texto, number: phone, text: texto }),
+      headers: ehZapi
+        ? {
+            "Content-Type": "application/json",
+            "Client-Token": clientToken as string,
+          }
+        : {
+            "Content-Type": "application/json",
+            apikey: token,
+            Authorization: `Bearer ${token}`,
+          },
+      body: JSON.stringify(ehZapi ? { phone, message: texto } : { number: phone, text: texto }),
     });
     const corpo = await res.text().catch(() => "");
     if (!res.ok) {
       console.warn("[WhatsApp] falha no envio:", res.status, corpo);
       if (/client-token/i.test(corpo)) {
-        return { ok: false, erro: "Token de segurança do WhatsApp (Client-Token) não configurado." };
+        return {
+          ok: false,
+          erro: "Client-Token recusado pela Z-API. Confira o token de segurança da conta.",
+        };
       }
       return { ok: false, erro: `Falha ao enviar (${res.status}).` };
     }
@@ -321,16 +331,24 @@ async function handle(body: any) {
       const codigo = String(Math.floor(100000 + Math.random() * 900000));
       const expira = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
-      await db.from("gm_login_codigos").upsert(
+      const { error: erroAoSalvarCodigo } = await db.from("gm_login_codigos").upsert(
         { matricula: mat, codigo, celular, expira_em: expira, tentativas: 0, criado_em: new Date().toISOString() },
         { onConflict: "matricula" },
       );
+      if (erroAoSalvarCodigo) {
+        console.error("[Autenticação] falha ao salvar código:", erroAoSalvarCodigo.message);
+        return json({ error: "Não foi possível preparar o código de acesso." }, 500);
+      }
 
       const envio = await enviarWhatsApp(
         celular,
         `GUARDA MUNICIPAL DE ARRAIAL DO CABO\n\nSeu código de acesso é ${codigo}.\nEle vale por 5 minutos. Não compartilhe com ninguém.`,
       );
-      if (!envio.ok) return json({ error: envio.erro }, 502);
+      if (!envio.ok) {
+        await db.from("gm_login_codigos").delete().eq("matricula", mat);
+        // Falha do provedor é uma resposta controlada, não um erro fatal da rota.
+        return json({ success: false, error: envio.erro });
+      }
 
       return json({ success: true, celular: mascararCelular(celular) });
     }
