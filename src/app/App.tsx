@@ -1014,7 +1014,7 @@ export default function App() {
                 </div>
                 <h2 className="text-xl font-bold text-slate-900 uppercase">Confirmação de Acesso</h2>
                 <p className="text-xs text-slate-500 mt-1">
-                  Enviamos um código de 6 dígitos para o seu WhatsApp cadastrado.
+                  Enviamos um código de 6 dígitos para o seu WhatsApp cadastrado. Ele vale por 10 minutos.
                 </p>
               </div>
 

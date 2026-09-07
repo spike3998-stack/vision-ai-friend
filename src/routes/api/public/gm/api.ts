@@ -328,24 +328,40 @@ async function handle(body: any) {
         );
       }
 
-      const codigo = String(Math.floor(100000 + Math.random() * 900000));
-      const expira = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+      // Reaproveita o código atual se ainda estiver dentro da validade (10 min),
+      // para não trocar o código a cada tentativa de login.
+      const { data: codigoAtual } = await db
+        .from("gm_login_codigos")
+        .select("codigo, expira_em")
+        .eq("matricula", mat)
+        .limit(1);
+      const registroAtual = codigoAtual?.[0];
 
-      const { error: erroAoSalvarCodigo } = await db.from("gm_login_codigos").upsert(
-        { matricula: mat, codigo, celular, expira_em: expira, tentativas: 0, criado_em: new Date().toISOString() },
-        { onConflict: "matricula" },
-      );
-      if (erroAoSalvarCodigo) {
-        console.error("[Autenticação] falha ao salvar código:", erroAoSalvarCodigo.message);
-        return json({ error: "Não foi possível preparar o código de acesso." }, 500);
+      let codigo: string;
+      if (
+        registroAtual &&
+        new Date(registroAtual.expira_em as string).getTime() > Date.now()
+      ) {
+        codigo = String(registroAtual.codigo);
+      } else {
+        codigo = String(Math.floor(100000 + Math.random() * 900000));
+        const expira = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+        const { error: erroAoSalvarCodigo } = await db.from("gm_login_codigos").upsert(
+          { matricula: mat, codigo, celular, expira_em: expira, tentativas: 0, criado_em: new Date().toISOString() },
+          { onConflict: "matricula" },
+        );
+        if (erroAoSalvarCodigo) {
+          console.error("[Autenticação] falha ao salvar código:", erroAoSalvarCodigo.message);
+          return json({ error: "Não foi possível preparar o código de acesso." }, 500);
+        }
       }
 
       const envio = await enviarWhatsApp(
         celular,
-        `GUARDA MUNICIPAL DE ARRAIAL DO CABO\n\nSeu código de acesso é ${codigo}.\nEle vale por 5 minutos. Não compartilhe com ninguém.`,
+        `👮 *CENTRAL DE OPERAÇÕES- GCM*\n\nAGENTE, SUA VERIFICAÇÃO EM DUAS ETAPAS FOI SOLICITADA.\n\nCODIGO DE LIBERAÇÃO: *${codigo}*\n\nVALIDADE DO CÓD.: 10 MIN\n\n_*Em caso de não reconhecimento desta tentativa, informe a CENTRAL imediatamente.*_`,
       );
       if (!envio.ok) {
-        await db.from("gm_login_codigos").delete().eq("matricula", mat);
         // Falha do provedor é uma resposta controlada, não um erro fatal da rota.
         return json({ success: false, error: envio.erro });
       }
