@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { GrupamentoItem, UsuarioCadastrado } from '../types';
 import { useGrupamentos, setGrupamentos } from '../data/grupamentos';
-import { processarFotoPerfil, lerArquivoParaEdicao } from '../services/imageUtils';
+import { processarFotoPerfil } from '../services/imageUtils';
 import { salvarGrupamentoServidor, excluirGrupamentoServidor } from '../services/api';
 
 interface DevGrupamentosProps {
@@ -49,8 +49,7 @@ export const DevGrupamentos: React.FC<DevGrupamentosProps> = ({ usuarios, onVolt
     const arquivo = e.target.files?.[0];
     if (!arquivo || !editando) return;
     try {
-      const bruta = await lerArquivoParaEdicao(arquivo);
-      const tratada = await processarFotoPerfil(bruta);
+      const tratada = await processarFotoPerfil(arquivo);
       setEditando({ ...editando, item: { ...editando.item, imagem: tratada } });
     } catch (err: any) {
       setErro(err?.message || 'Não foi possível carregar a imagem do brasão.');
