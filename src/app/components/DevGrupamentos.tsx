@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { GrupamentoItem, UsuarioCadastrado } from '../types';
 import { useGrupamentos, setGrupamentos } from '../data/grupamentos';
-import { processarFotoPerfil, lerArquivoParaEdicao } from '../services/imageUtils';
+import { processarFotoPerfil } from '../services/imageUtils';
 import { salvarGrupamentoServidor, excluirGrupamentoServidor } from '../services/api';
 
 interface DevGrupamentosProps {
